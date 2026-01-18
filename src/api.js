@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/',           // ← very important: let the Vite proxy handle it
-  withCredentials: true,  // send/receive cookies
+  // This tells the app to use the URL from your .env file
+  baseURL: import.meta.env.VITE_BACKEND_URL, 
+  withCredentials: true,
 });
 
 export default api;
