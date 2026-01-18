@@ -1,14 +1,11 @@
 import axios from 'axios';
 
-// Ensure the URL is taken from Vercel's environment variables
-const baseURL = import.meta.env.VITE_BACKEND_URL;
+// This will help us debug in the browser console
+console.log("Current Backend URL:", import.meta.env.VITE_BACKEND_URL);
 
 const api = axios.create({
-  baseURL: baseURL, 
+  baseURL: import.meta.env.VITE_BACKEND_URL, 
   withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json'
-  }
 });
 
 export default api;
