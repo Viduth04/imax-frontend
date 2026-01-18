@@ -1,23 +1,17 @@
 // ✅ src/pages/OrderSuccess.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  CheckCircle,
-  Package,
-  Truck,
-  Clock,
-  ArrowRight,
-  Home,
-  ShoppingBag,
-  Sparkles,
-  Loader2,
+  CheckCircle, Package, Truck, Clock, ArrowRight,
+  Home, ShoppingBag, Sparkles, Loader2, Mail
 } from "lucide-react";
 
+// Helper for loading overlay
 const PageOverlay = ({ show = false, text = "Loading…" }) => {
   if (!show) return null;
   return (
     <div className="fixed inset-0 z-[9999] grid place-items-center bg-white/70 backdrop-blur-sm">
-      <div className="flex items-center gap-3 rounded-xl bg-white px-5 py-3 shadow">
+      <div className="flex items-center gap-3 rounded-xl bg-white px-5 py-3 shadow-xl border border-slate-100">
         <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
         <span className="text-sm font-medium text-slate-700">{text}</span>
       </div>
@@ -28,262 +22,155 @@ const PageOverlay = ({ show = false, text = "Loading…" }) => {
 const OrderSuccess = () => {
   const navigate = useNavigate();
   const location = useLocation();
-
-  // 🧾 get details passed from Checkout
-  const { orderId, paymentRef, orderData } = location.state || {};
-  const orderNumber = orderId || "ORD" + Date.now();
-
   const [routing, setRouting] = useState(false);
+
+  // 🛡️ Safety: Fallback if user accesses page directly without checkout state
+  const { orderId, paymentRef, orderData } = location.state || {};
+  
+  useEffect(() => {
+    if (!location.state) {
+      // Redirect to home if no order info is present (prevents ghost success pages)
+      const timer = setTimeout(() => navigate('/'), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state, navigate]);
+
+  const orderNumber = orderId || "ORD" + Math.floor(Math.random() * 1000000);
 
   const handleNavigate = (path) => {
     setRouting(true);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        navigate(path);
-      });
-    });
+    // Ensure the loader state renders before the heavy navigation task begins
+    setTimeout(() => navigate(path), 100);
   };
 
+  if (!location.state) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-500 mb-4" />
+        <h2 className="text-xl font-bold">Processing your session...</h2>
+        <p className="text-gray-500">Redirecting to home if no order data is found.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 flex items-center justify-center py-12 px-4">
-      {/* overlay loader */}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-green-50 to-blue-50 flex items-center justify-center py-12 px-4 relative overflow-hidden">
       <PageOverlay show={routing} text="Redirecting…" />
 
-      {/* local CSS animations */}
       <style>
         {`
-          @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
-          @keyframes pulse { 0%, 100% { opacity: 0.2; } 50% { opacity: 0.1; } }
-          @keyframes bounce {
-            0%, 100% { transform: translateY(-25%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
-            50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
-          }
-          .animate-ping-custom { animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite; }
-          .animate-pulse-custom { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-          .animate-bounce-custom { animation: bounce 1s infinite; }
+          @keyframes ping-slow { 75%, 100% { transform: scale(1.5); opacity: 0; } }
+          .animate-ping-slow { animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
         `}
       </style>
 
-      <div className="max-w-2xl w-full">
-        {/* success icon */}
-        <div className="text-center mb-8">
+      <div className="max-w-2xl w-full z-10">
+        {/* Success Icon Header */}
+        <div className="text-center mb-10">
           <div className="relative inline-block">
-            <div className="absolute inset-0 animate-ping-custom">
-              <div className="w-32 h-32 bg-green-400 rounded-full opacity-20"></div>
+            <div className="absolute inset-0 animate-ping-slow bg-green-400 rounded-full opacity-20"></div>
+            <div className="relative w-28 h-28 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-2xl">
+              <CheckCircle className="w-16 h-16 text-white" strokeWidth={2.5} />
             </div>
-            <div
-              className="absolute inset-0 animate-pulse-custom"
-              style={{ animationDelay: "75ms" }}
-            >
-              <div className="w-32 h-32 bg-blue-400 rounded-full opacity-20"></div>
-            </div>
-
-            <div className="relative w-32 h-32 bg-gradient-to-br from-green-500 to-green-700 rounded-full flex items-center justify-center shadow-2xl shadow-green-500/25">
-              <CheckCircle className="w-20 h-20 text-white" strokeWidth={2.5} />
-            </div>
-
-            <div
-              className="absolute -top-2 -right-2 animate-bounce-custom"
-              style={{ animationDelay: "100ms" }}
-            >
-              <Sparkles className="w-8 h-8 text-yellow-400" fill="currentColor" />
-            </div>
-            <div
-              className="absolute -bottom-2 -left-2 animate-bounce-custom"
-              style={{ animationDelay: "200ms" }}
-            >
-              <Sparkles className="w-6 h-6 text-blue-400" fill="currentColor" />
-            </div>
+            <Sparkles className="absolute -top-2 -right-2 w-8 h-8 text-yellow-400 animate-bounce" />
           </div>
         </div>
 
-        {/* main card */}
-        <div className="bg-white rounded-3xl shadow-2xl border border-blue-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-green-500 to-green-600 px-8 py-6 text-center">
-            <h1 className="text-4xl font-black text-white mb-2">
-              Payment Successful! 🎉
-            </h1>
-            <p className="text-green-100 text-lg">
-              Order #{orderNumber} has been confirmed and is being processed
+        {/* Main Success Card */}
+        <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-blue-900/5 border border-white/50 overflow-hidden">
+          <div className="bg-slate-900 px-8 py-8 text-center text-white">
+            <h1 className="text-3xl font-black mb-2 tracking-tight">Order Confirmed! 🎉</h1>
+            <p className="text-slate-400 font-medium">
+              Order <span className="text-green-400">#{orderNumber}</span> is officially on our radar.
             </p>
-            {paymentRef && (
-              <p className="text-green-200 text-sm mt-2">
-                Reference ID:{" "}
-                <span className="font-mono break-all">{paymentRef}</span>
-              </p>
-            )}
           </div>
 
           <div className="p-8">
-            {/* thank you */}
-            <div className="text-center mb-8">
-              <p className="text-gray-600 text-lg leading-relaxed">
-                Thank you for shopping with us! We've received your order and will
-                process it shortly.
-                {orderData?.shippingAddress && (
-                  <>
-                    <br />
-                    Your order will be delivered to{" "}
-                    <b>{orderData.shippingAddress.address}</b>,{" "}
-                    {orderData.shippingAddress.city}.
-                  </>
-                )}
+            <div className="mb-8 text-center">
+              <p className="text-slate-600 leading-relaxed">
+                Thank you for your purchase! A confirmation email has been sent to{" "}
+                <span className="font-bold text-slate-800">{orderData?.userEmail || "your inbox"}</span>.
               </p>
             </div>
 
-            {/* timeline */}
-            <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl p-6 mb-8 border border-blue-100">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center text-lg">
-                <Clock className="w-5 h-5 mr-2 text-blue-600" />
-                <span>What happens next?</span>
-              </h3>
-
-              <div className="space-y-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg">
-                    <CheckCircle className="w-5 h-5 text-white" strokeWidth={2.5} />
-                  </div>
-                  <div className="flex-1 pt-1">
-                    <p className="font-semibold text-gray-900">Order Confirmed</p>
-                    <p className="text-sm text-gray-600">
-                      We've received your order
-                    </p>
-                  </div>
-                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-bold">
-                    Done
-                  </span>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center shadow-lg">
-                    <Package className="w-5 h-5 text-blue-700" strokeWidth={2.5} />
-                  </div>
-                  <div className="flex-1 pt-1">
-                    <p className="font-semibold text-gray-900">Processing</p>
-                    <p className="text-sm text-gray-600">
-                      We're preparing your items
-                    </p>
-                  </div>
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold animate-pulse">
-                    Next
-                  </span>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center shadow">
-                    <Truck className="w-5 h-5 text-gray-500" strokeWidth={2.5} />
-                  </div>
-                  <div className="flex-1 pt-1">
-                    <p className="font-semibold text-gray-900">On the Way</p>
-                    <p className="text-sm text-gray-600">
-                      Your order will be shipped soon
-                    </p>
-                  </div>
-                </div>
-              </div>
+            {/* Steps Timeline */}
+            <div className="space-y-6 mb-10">
+              <TimelineItem 
+                icon={<CheckCircle className="w-5 h-5 text-white" />} 
+                title="Payment Received" 
+                desc={paymentRef ? `Ref: ${paymentRef}` : "Verified successfully"}
+                status="Done"
+                active
+              />
+              <TimelineItem 
+                icon={<Package className="w-5 h-5 text-blue-600" />} 
+                title="Preparing Package" 
+                desc="Items are being quality checked and packed"
+                status="Next"
+                processing
+              />
+              <TimelineItem 
+                icon={<Truck className="w-5 h-5 text-slate-400" />} 
+                title="Shipping" 
+                desc={`Delivery to ${orderData?.shippingAddress?.city || 'your address'}`}
+                status="Pending"
+              />
             </div>
 
-            {/* info cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-200 rounded-lg flex items-center justify-center">
-                  <Package className="w-5 h-5 text-blue-700" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
-                    Estimated Delivery
-                  </p>
-                  <p className="font-bold text-blue-900">3-5 Business Days</p>
-                </div>
-              </div>
-
-              <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-200 rounded-lg flex items-center justify-center">
-                  <Truck className="w-5 h-5 text-green-700" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">
-                    Shipping
-                  </p>
-                  <p className="font-bold text-green-900">Free Delivery</p>
-                </div>
-              </div>
-            </div>
-
-            {/* email notice */}
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-4 mb-8">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 bg-purple-200 rounded-lg flex items-center justify-center mt-1">
-                  <span className="text-lg">📧</span>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 mb-1">
-                    Order confirmation sent!
-                  </p>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    We've sent a confirmation email with your order details.
-                    Please check your inbox.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* buttons */}
-            <div className="flex flex-col gap-4">
+            {/* Action Buttons */}
+            <div className="grid gap-4">
               <button
                 onClick={() => handleNavigate("/my-orders")}
                 disabled={routing}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 px-6 rounded-xl hover:from-blue-700 hover:to-blue-800 font-bold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60"
+                className="group flex items-center justify-center gap-3 w-full bg-blue-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-200"
               >
-                {routing ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <ShoppingBag className="w-5 h-5" />
-                )}
-                <span>{routing ? "Opening My Orders…" : "View My Orders"}</span>
-                {!routing && <ArrowRight className="w-5 h-5" />}
+                <ShoppingBag className="w-5 h-5" />
+                Track Order
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
-
+              
               <button
                 onClick={() => handleNavigate("/shop")}
                 disabled={routing}
-                className="w-full bg-white border-2 border-gray-300 text-gray-700 py-4 px-6 rounded-xl hover:border-blue-300 hover:bg-blue-50 font-semibold text-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-60"
+                className="flex items-center justify-center gap-3 w-full bg-slate-50 text-slate-700 py-4 rounded-2xl font-bold text-lg hover:bg-slate-100 transition-all border border-slate-200"
               >
-                {routing ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <Home className="w-5 h-5" />
-                )}
-                <span>{routing ? "Opening Shop…" : "Continue Shopping"}</span>
+                <Home className="w-5 h-5" />
+                Back to Shop
               </button>
             </div>
           </div>
         </div>
 
-        {/* footer support */}
-        <div className="mt-8 text-center">
-          <div className="inline-block bg-white rounded-2xl shadow-lg px-6 py-4 border border-blue-100">
-            <p className="text-sm text-gray-600">
-              Need help? Contact{" "}
-              <a
-                href="mailto:support@greengrow.lk"
-                className="text-blue-600 hover:text-blue-700 font-semibold underline transition-colors"
-              >
-                support@greengrow.lk
-              </a>
-            </p>
-          </div>
-        </div>
-
-        {/* subtle background elements */}
-        <div className="fixed top-10 left-10 w-20 h-20 bg-blue-200 rounded-full opacity-20 animate-pulse-custom pointer-events-none"></div>
-        <div
-          className="fixed bottom-10 right-10 w-32 h-32 bg-green-200 rounded-full opacity-20 animate-pulse-custom pointer-events-none"
-          style={{ animationDelay: "150ms" }}
-        ></div>
+        {/* Support Link */}
+        <p className="mt-8 text-center text-slate-500 text-sm">
+          Need assistance? <a href="mailto:support@greengrow.lk" className="text-blue-600 font-bold hover:underline">Contact Support</a>
+        </p>
       </div>
     </div>
   );
 };
+
+// Sub-component for Timeline Items
+const TimelineItem = ({ icon, title, desc, status, active = false, processing = false }) => (
+  <div className="flex items-start gap-4">
+    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+      active ? 'bg-green-500 shadow-lg shadow-green-200' : 'bg-slate-100'
+    } ${processing ? 'bg-blue-100 ring-4 ring-blue-50' : ''}`}>
+      {icon}
+    </div>
+    <div className="flex-1">
+      <div className="flex items-center justify-between">
+        <h4 className="font-bold text-slate-900">{title}</h4>
+        <span className={`text-[10px] uppercase tracking-widest font-black px-2 py-0.5 rounded ${
+          active ? 'bg-green-100 text-green-700' : 
+          processing ? 'bg-blue-100 text-blue-700 animate-pulse' : 'bg-slate-100 text-slate-400'
+        }`}>
+          {status}
+        </span>
+      </div>
+      <p className="text-sm text-slate-500">{desc}</p>
+    </div>
+  </div>
+);
 
 export default OrderSuccess;

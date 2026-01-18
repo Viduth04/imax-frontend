@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useFormik } from 'formik';
 import { feedbackSchema } from '../../utils/validationSchemas';
-import { Send, Star, MessageSquare, Shield, AlertCircle, Monitor, Cpu, Wifi, HardDrive, Users, Award, ThumbsUp } from 'lucide-react';
-import api from '../api';
+import { Send, Star, Shield, AlertCircle, Monitor, Cpu, HardDrive, Users, Award, ThumbsUp } from 'lucide-react';
+import api from '../api'; // Correctly using the production-ready instance
 import toast from 'react-hot-toast';
 
 const FeedbackForm = ({ onSuccess, existingFeedback = null }) => {
@@ -23,9 +23,11 @@ const FeedbackForm = ({ onSuccess, existingFeedback = null }) => {
       try {
         let response;
         if (existingFeedback) {
-          response = await axios.put(`http://localhost:5000/api/feedback/${existingFeedback._id}`, values);
+          // FIXED: Use 'api' and relative path
+          response = await api.put(`/feedback/${existingFeedback._id}`, values);
         } else {
-          response = await axios.post('http://localhost:5000/api/feedback', values);
+          // FIXED: Use 'api' and relative path
+          response = await api.post('/feedback', values);
         }
         
         if (response.data.success) {
@@ -111,7 +113,6 @@ const FeedbackForm = ({ onSuccess, existingFeedback = null }) => {
 
   return (
     <div className="bg-white/60 backdrop-blur-sm rounded-3xl shadow-xl p-6 sm:p-8 border border-slate-200/60">
-      {/* Header */}
       <div className="flex items-center mb-8">
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 bg-clip-text text-transparent">
@@ -123,7 +124,6 @@ const FeedbackForm = ({ onSuccess, existingFeedback = null }) => {
         </div>
       </div>
 
-      {/* Info Banner */}
       <div className="mb-8 p-5 bg-gradient-to-r from-blue-50 to-blue-50 border border-blue-200 rounded-2xl">
         <div className="flex items-start">
           <div className="p-2 bg-blue-100 rounded-xl mr-3">
@@ -140,7 +140,6 @@ const FeedbackForm = ({ onSuccess, existingFeedback = null }) => {
       </div>
       
       <form onSubmit={formik.handleSubmit} className="space-y-8">
-        {/* Subject */}
         <div>
           <label htmlFor="subject" className="block text-sm font-bold text-slate-700 mb-3">
             Feedback Title *
@@ -157,7 +156,7 @@ const FeedbackForm = ({ onSuccess, existingFeedback = null }) => {
                 ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
                 : 'border-slate-200 bg-slate-50/50 hover:border-blue-300 focus:border-blue-500 focus:ring-blue-500/20'
             }`}
-            placeholder="Brief summary of your feedback (e.g., Excellent laptop repair service, Quick response time)"
+            placeholder="Brief summary of your feedback"
           />
           {formik.touched.subject && formik.errors.subject && (
             <p className="mt-2 text-sm text-red-600 flex items-center">
@@ -167,9 +166,7 @@ const FeedbackForm = ({ onSuccess, existingFeedback = null }) => {
           )}
         </div>
 
-        {/* Category and Rating Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          {/* Category */}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-4">
               Feedback Category *
@@ -223,22 +220,14 @@ const FeedbackForm = ({ onSuccess, existingFeedback = null }) => {
                 </label>
               ))}
             </div>
-            {formik.touched.category && formik.errors.category && (
-              <p className="mt-3 text-sm text-red-600 flex items-center">
-                <AlertCircle className="w-4 h-4 mr-1.5" />
-                {formik.errors.category}
-              </p>
-            )}
           </div>
 
-          {/* Rating */}
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-4">
               Overall Experience Rating *
             </label>
             <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-6">
               <div className="flex flex-col space-y-6">
-                {/* Star Rating */}
                 <div className="flex justify-center space-x-3">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
@@ -260,35 +249,19 @@ const FeedbackForm = ({ onSuccess, existingFeedback = null }) => {
                   ))}
                 </div>
                 
-                {/* Rating Display */}
                 {formik.values.rating > 0 && (
                   <div className="text-center space-y-3">
                     <div className={`inline-flex items-center px-4 py-2 rounded-xl bg-gradient-to-r ${getRatingColor(formik.values.rating)} text-white font-bold shadow-lg`}>
                       <span className="text-lg">{getRatingText(formik.values.rating)}</span>
                     </div>
-                    <p className="text-sm text-slate-600 font-medium">
-                      {formik.values.rating} out of 5 stars
-                    </p>
-                    <div className="w-full bg-slate-200 rounded-full h-2">
-                      <div 
-                        className={`h-2 rounded-full bg-gradient-to-r ${getRatingColor(formik.values.rating)} transition-all duration-500`}
-                        style={{ width: `${(formik.values.rating / 5) * 100}%` }}
-                      ></div>
-                    </div>
+                    <p className="text-sm text-slate-600 font-medium">{formik.values.rating} out of 5 stars</p>
                   </div>
                 )}
               </div>
             </div>
-            {formik.touched.rating && formik.errors.rating && (
-              <p className="mt-2 text-sm text-red-600 flex items-center">
-                <AlertCircle className="w-4 h-4 mr-1.5" />
-                {formik.errors.rating}
-              </p>
-            )}
           </div>
         </div>
 
-        {/* Message */}
         <div>
           <label htmlFor="message" className="block text-sm font-bold text-slate-700 mb-3">
             Detailed Feedback *
@@ -305,65 +278,32 @@ const FeedbackForm = ({ onSuccess, existingFeedback = null }) => {
                 ? 'border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20'
                 : 'border-slate-200 bg-slate-50/50 hover:border-blue-300 focus:border-blue-500 focus:ring-blue-500/20'
             }`}
-            placeholder="Share your detailed experience with IMAX Computer Services:
-
-• Technical service quality and expertise
-• Repair work satisfaction and durability  
-• Customer service and staff professionalism
-• Response time and communication
-• Value for money and pricing
-• Website/system usability
-• Suggestions for improvement
-• Any issues or concerns
-
-Your detailed feedback helps us serve Sri Lanka's technology needs better!"
+            placeholder="Share your detailed experience..."
           />
-          <div className="mt-2 flex justify-between text-xs text-slate-500">
-            <span>Be specific and constructive in your feedback</span>
-            <span className={`${formik.values.message.length > 1500 ? 'text-orange-500 font-semibold' : ''}`}>
-              {formik.values.message.length}/2000
-            </span>
-          </div>
-          {formik.touched.message && formik.errors.message && (
-            <p className="mt-2 text-sm text-red-600 flex items-center">
-              <AlertCircle className="w-4 h-4 mr-1.5" />
-              {formik.errors.message}
-            </p>
-          )}
         </div>
 
-        {/* Anonymous Option */}
         <div className="bg-gradient-to-r from-slate-50 to-blue-50 border-2 border-slate-200 rounded-2xl p-6">
           <div className="flex items-start space-x-4">
-            <div className="relative">
-              <input
-                type="checkbox"
-                id="isAnonymous"
-                name="isAnonymous"
-                checked={formik.values.isAnonymous}
-                onChange={formik.handleChange}
-                className="h-6 w-6 text-blue-600 focus:ring-blue-500 border-slate-300 rounded-lg transition-colors duration-200"
-              />
-            </div>
+            <input
+              type="checkbox"
+              id="isAnonymous"
+              name="isAnonymous"
+              checked={formik.values.isAnonymous}
+              onChange={formik.handleChange}
+              className="h-6 w-6 text-blue-600 focus:ring-blue-500 border-slate-300 rounded-lg"
+            />
             <div className="flex-1">
               <label htmlFor="isAnonymous" className="block text-sm font-bold text-slate-900 mb-2 cursor-pointer">
                 Submit as anonymous feedback
               </label>
               <div className="flex items-start space-x-2 text-sm text-slate-600">
                 <Shield className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-slate-700 mb-1">Privacy Protection</p>
-                  <p className="text-slate-600 leading-relaxed">
-                    When enabled, your personal information will be kept completely private. 
-                    Only our feedback analysis team will have access to improve our services.
-                  </p>
-                </div>
+                <p>Your personal information will be kept private.</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Submit Button */}
         <div className="flex flex-col sm:flex-row gap-4 pt-6">
           <button
             type="submit"
@@ -376,23 +316,8 @@ Your detailed feedback helps us serve Sri Lanka's technology needs better!"
               : (existingFeedback ? 'Update Feedback' : 'Submit Feedback')
             }
           </button>
-          
         </div>
       </form>
-
-      {/* Footer Note */}
-      <div className="mt-8 pt-6 border-t border-slate-200">
-        <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 rounded-2xl p-6 text-white text-center">
-          <div className="flex items-center justify-center space-x-2 mb-2">
-            <Monitor className="w-5 h-5" />
-            <span className="font-bold">IMAX Computer Solutions</span>
-          </div>
-          <p className="text-sm text-blue-100">
-            Thank you for helping us improve our computer services across Sri Lanka. 
-            Your feedback drives our commitment to excellence in technology solutions.
-          </p>
-        </div>
-      </div>
     </div>
   );
 };

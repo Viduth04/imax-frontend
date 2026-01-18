@@ -3,7 +3,7 @@ import { Users, UserPlus, Edit2, Trash2, X, Save, AlertCircle, Eye, EyeOff } fro
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import toast from 'react-hot-toast';
-import api from '../api';
+import api from '../api'; // Your custom axios instance
 
 const TechnicianManagement = () => {
   const [technicians, setTechnicians] = useState([]);
@@ -28,7 +28,8 @@ const TechnicianManagement = () => {
   const fetchTechnicians = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get('/technicians');
+      // Fixed: Using 'api' instance instead of undefined 'axios'
+      const { data } = await api.get('/technicians');
       if (data.success) {
         setTechnicians(data.technicians);
       }
@@ -51,7 +52,7 @@ const TechnicianManagement = () => {
       : Yup.string().required('Password is required').min(6, 'Password must be at least 6 characters'),
     phone: Yup.string()
       .required('Phone number is required')
-      .matches(/^[\d\s\-\+KATEX_INLINE_OPENKATEX_INLINE_CLOSE]+$/, 'Invalid phone number format'),
+      .matches(/^[\d\s\-\+]+$/, 'Invalid phone number format'), // Fixed regex syntax
     specialization: Yup.string()
       .required('Specialization is required'),
     experience: Yup.number()
@@ -75,26 +76,25 @@ const TechnicianManagement = () => {
     validationSchema,
     onSubmit: async (values, { setSubmitting, resetForm }) => {
       try {
-        // Remove password field if empty during edit
         const submitData = { ...values };
         if (editingTechnician && !submitData.password) {
           delete submitData.password;
         }
 
         if (editingTechnician) {
-          const { data } = await axios.put(`/technicians/${editingTechnician._id}`, submitData);
+          // Fixed: Using 'api' instance
+          const { data } = await api.put(`/technicians/${editingTechnician._id}`, submitData);
           if (data.success) {
             toast.success('Technician updated successfully');
           }
         } else {
-          const { data } = await axios.post('/technicians', submitData);
+          // Fixed: Using 'api' instance
+          const { data } = await api.post('/technicians', submitData);
           if (data.success) {
             toast.success('Technician created successfully');
           }
         }
-        resetForm();
-        setShowModal(false);
-        setEditingTechnician(null);
+        handleCloseModal();
         fetchTechnicians();
       } catch (error) {
         toast.error(error.response?.data?.message || 'Operation failed');
@@ -122,7 +122,7 @@ const TechnicianManagement = () => {
     if (!window.confirm('Are you sure you want to delete this technician? This will also delete their login credentials.')) return;
 
     try {
-      const { data } = await axios.delete(`/technicians/${id}`);
+      const { data } = await api.delete(`/technicians/${id}`);
       if (data.success) {
         toast.success('Technician deleted successfully');
         fetchTechnicians();
@@ -293,7 +293,7 @@ const TechnicianManagement = () => {
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Password {!editingTechnician && <span className="text-red-500">*</span>}
-                    {editingTechnician && <span className="text-xs text-slate-500">(Leave blank to keep current)</span>}
+                    {editingTechnician && <span className="text-xs text-slate-500 ml-1">(Leave blank to keep current)</span>}
                   </label>
                   <div className="relative">
                     <input

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import toast from 'react-hot-toast';
-import api from '../api';
+import api from '../api'; // Used this instance consistently
 
 const CartContext = createContext();
 
@@ -22,16 +22,20 @@ export const CartProvider = ({ children }) => {
   useEffect(() => {
     if (checkAuth) {
       fetchCart();
-      fetchCartCount();
     } else {
       setCart(null);
       setCartCount(0);
     }
   }, [checkAuth]);
 
+  const calculateCartCount = (cartData) => {
+    const count = cartData?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+    setCartCount(count);
+  };
+
   const fetchCart = async () => {
     try {
-      const { data } = await axios.get('/cart');
+      const { data } = await api.get('/cart');
       if (data.success) {
         setCart(data.cart);
         calculateCartCount(data.cart);
@@ -41,26 +45,10 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  const fetchCartCount = async () => {
-    try {
-      const { data } = await axios.get('/cart/count');
-      if (data.success) {
-        setCartCount(data.count);
-      }
-    } catch (error) {
-      console.error('Failed to fetch cart count');
-    }
-  };
-
-  const calculateCartCount = (cartData) => {
-    const count = cartData?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-    setCartCount(count);
-  };
-
   const addToCart = async (productId, quantity = 1) => {
     try {
       setLoading(true);
-      const { data } = await axios.post('/cart', { productId, quantity });
+      const { data } = await api.post('/cart', { productId, quantity });
       if (data.success) {
         setCart(data.cart);
         calculateCartCount(data.cart);
@@ -76,7 +64,7 @@ export const CartProvider = ({ children }) => {
   const updateCartItem = async (productId, quantity) => {
     try {
       setLoading(true);
-      const { data } = await axios.put('/cart', { productId, quantity });
+      const { data } = await api.put('/cart', { productId, quantity });
       if (data.success) {
         setCart(data.cart);
         calculateCartCount(data.cart);
@@ -92,7 +80,7 @@ export const CartProvider = ({ children }) => {
   const removeFromCart = async (productId) => {
     try {
       setLoading(true);
-      const { data } = await axios.delete(`/cart/${productId}`);
+      const { data } = await api.delete(`/cart/${productId}`);
       if (data.success) {
         setCart(data.cart);
         calculateCartCount(data.cart);
@@ -108,7 +96,7 @@ export const CartProvider = ({ children }) => {
   const clearCart = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.delete('/cart');
+      const { data } = await api.delete('/cart');
       if (data.success) {
         setCart(data.cart);
         setCartCount(0);

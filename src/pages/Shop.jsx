@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, X, ShoppingCart,  Box, Star, ChevronDown } from 'lucide-react';
+import { Search, Filter, X, ShoppingCart, Box, Star, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import api from '../api';
+import api from '../api'; // Using your custom api instance
 
 const Shop = () => {
-  const { checkAuth } = useAuth();
-  const { addToCart, cartCount } = useCart();
+  const { user } = useAuth(); // Changed to user to check authentication status
+  const { addToCart } = useCart();
   const navigate = useNavigate();
   
   const [products, setProducts] = useState([]);
@@ -28,21 +28,23 @@ const Shop = () => {
     total: 0
   });
 
-  const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
-
   const categoryOptions = ['CPU', 'GPU', 'Motherboard', 'RAM', 'Storage', 'PSU', 'Case', 'Cooling', 'Peripherals', 'Accessories'];
 
+  // Fetch products when dependencies change
   useEffect(() => {
     fetchProducts();
-    fetchCategories();
-    fetchBrands();
   }, [searchQuery, filters, pagination.currentPage]);
+
+  // Initial fetch for brands/categories
+  useEffect(() => {
+    fetchBrands();
+  }, []);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
+      const params = {
         page: pagination.currentPage,
         limit: 12,
         status: 'active',
@@ -52,9 +54,11 @@ const Shop = () => {
         ...(filters.brand && { brand: filters.brand }),
         ...(filters.minPrice && { minPrice: filters.minPrice }),
         ...(filters.maxPrice && { maxPrice: filters.maxPrice })
-      });
+      };
 
-      const { data } = await axios.get(`/products?${params}`);
+      // Changed axios to api to use your base configuration
+      const { data } = await api.get('/products', { params });
+      
       if (data.success) {
         setProducts(data.products);
         setPagination({
@@ -65,23 +69,15 @@ const Shop = () => {
       }
     } catch (error) {
       toast.error('Failed to fetch products');
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      const { data } = await axios.get('/products/categories');
-      if (data.success) setCategories(data.categories);
-    } catch (error) {
-      console.error('Failed to fetch categories');
-    }
-  };
-
   const fetchBrands = async () => {
     try {
-      const { data } = await axios.get('/products/brands');
+      const { data } = await api.get('/products/brands');
       if (data.success) setBrands(data.brands);
     } catch (error) {
       console.error('Failed to fetch brands');
@@ -89,7 +85,7 @@ const Shop = () => {
   };
 
   const handleAddToCart = async (product) => {
-    if (!checkAuth) {
+    if (!user) {
       toast.error('Please login to add items to cart');
       navigate('/login');
       return;
@@ -100,7 +96,12 @@ const Shop = () => {
       return;
     }
 
-    await addToCart(product._id, 1);
+    try {
+      await addToCart(product._id, 1);
+      // Success toast is usually handled inside the CartContext
+    } catch (error) {
+      toast.error('Could not add to cart');
+    }
   };
 
   const handleProductClick = (productId) => {
@@ -116,6 +117,7 @@ const Shop = () => {
       sort: '-createdAt'
     });
     setSearchQuery('');
+    setPagination(prev => ({ ...prev, currentPage: 1 }));
   };
 
   const activeFiltersCount = Object.values(filters).filter(v => v && v !== '-createdAt').length + (searchQuery ? 1 : 0);
@@ -132,6 +134,7 @@ const Shop = () => {
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          
           {/* Sidebar Filters - Desktop */}
           <div className="hidden lg:block">
             <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200 sticky top-24">
@@ -156,7 +159,7 @@ const Shop = () => {
                   <select
                     value={filters.category}
                     onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   >
                     <option value="">All Categories</option>
                     {categoryOptions.map(cat => (
@@ -173,7 +176,7 @@ const Shop = () => {
                   <select
                     value={filters.brand}
                     onChange={(e) => setFilters({ ...filters, brand: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   >
                     <option value="">All Brands</option>
                     {brands.map(brand => (
@@ -193,14 +196,14 @@ const Shop = () => {
                       placeholder="Min Price"
                       value={filters.minPrice}
                       onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     />
                     <input
                       type="number"
                       placeholder="Max Price"
                       value={filters.maxPrice}
                       onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                     />
                   </div>
                 </div>
@@ -213,7 +216,7 @@ const Shop = () => {
                   <select
                     value={filters.sort}
                     onChange={(e) => setFilters({ ...filters, sort: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   >
                     <option value="-createdAt">Newest First</option>
                     <option value="createdAt">Oldest First</option>
@@ -239,7 +242,7 @@ const Shop = () => {
                     placeholder="Search products..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   />
                 </div>
                 
@@ -258,7 +261,7 @@ const Shop = () => {
               </div>
             </div>
 
-            {/* Mobile Filters */}
+            {/* Mobile Filters Dropdown */}
             {showFilters && (
               <div className="lg:hidden bg-white rounded-2xl shadow-sm p-6 border border-slate-200 mb-6">
                 <div className="flex items-center justify-between mb-6">
@@ -285,7 +288,7 @@ const Shop = () => {
                   <select
                     value={filters.category}
                     onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   >
                     <option value="">All Categories</option>
                     {categoryOptions.map(cat => (
@@ -296,7 +299,7 @@ const Shop = () => {
                   <select
                     value={filters.brand}
                     onChange={(e) => setFilters({ ...filters, brand: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   >
                     <option value="">All Brands</option>
                     {brands.map(brand => (
@@ -310,21 +313,21 @@ const Shop = () => {
                       placeholder="Min Price"
                       value={filters.minPrice}
                       onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-                      className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                     />
                     <input
                       type="number"
                       placeholder="Max Price"
                       value={filters.maxPrice}
                       onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-                      className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                     />
                   </div>
 
                   <select
                     value={filters.sort}
                     onChange={(e) => setFilters({ ...filters, sort: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                   >
                     <option value="-createdAt">Newest First</option>
                     <option value="createdAt">Oldest First</option>
@@ -338,7 +341,7 @@ const Shop = () => {
             )}
 
             {/* Results Info */}
-            <div className="mb-6 flex items-center justify-between text-sm text-slate-600">
+            <div className="mb-6 flex items-center justify-between text-sm text-slate-600 px-1">
               <p>
                 Showing {products.length} of {pagination.total} products
               </p>
@@ -346,8 +349,9 @@ const Shop = () => {
 
             {/* Products Grid */}
             {loading ? (
-              <div className="flex items-center justify-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <div className="flex flex-col items-center justify-center py-32 bg-white rounded-3xl border border-slate-200">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-slate-500 font-medium">Loading hardware...</p>
               </div>
             ) : products.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-sm p-12 text-center border border-slate-200">
@@ -366,27 +370,27 @@ const Shop = () => {
                 {products.map((product) => (
                   <div
                     key={product._id}
-                    className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg transition-all duration-200 group"
+                    className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
                   >
                     <div
                       className="relative h-56 bg-slate-100 cursor-pointer overflow-hidden"
                       onClick={() => handleProductClick(product._id)}
                     >
                       <img
-                        src={product.images[0]}
+                        src={product.images[0] || 'https://via.placeholder.com/400x400?text=No+Image'}
                         alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
                       {product.featured && (
-                        <div className="absolute top-2 left-2">
-                          <span className="px-3 py-1 bg-[#8BE13B] text-[#1A1A1A] rounded-full text-xs font-bold">
+                        <div className="absolute top-3 left-3">
+                          <span className="px-3 py-1 bg-[#8BE13B] text-[#1A1A1A] rounded-full text-xs font-bold shadow-sm">
                             Featured
                           </span>
                         </div>
                       )}
                       {product.quantity === 0 && (
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                          <span className="px-4 py-2 bg-red-500 text-white rounded-lg font-semibold">
+                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center">
+                          <span className="px-4 py-2 bg-red-500 text-white rounded-lg font-bold shadow-lg">
                             Out of Stock
                           </span>
                         </div>
@@ -395,11 +399,11 @@ const Shop = () => {
 
                     <div className="p-5">
                       <div className="mb-3">
-                        <span className="text-xs font-medium text-slate-500 uppercase">
+                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider bg-blue-50 px-2 py-1 rounded-md">
                           {product.category}
                         </span>
                         <h3
-                          className="font-semibold text-slate-900 mt-1 line-clamp-2 cursor-pointer hover:text-blue-600 transition-colors"
+                          className="font-bold text-slate-900 mt-2 line-clamp-2 h-12 cursor-pointer hover:text-blue-600 transition-colors leading-tight"
                           onClick={() => handleProductClick(product._id)}
                         >
                           {product.name}
@@ -407,22 +411,25 @@ const Shop = () => {
                       </div>
 
                       <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center text-xl font-bold text-blue-600">
-                          LKR: {product.price.toFixed(2)}
+                        <div className="flex flex-col">
+                          <span className="text-xs text-slate-400 font-medium">Price</span>
+                          <span className="text-lg font-black text-slate-900">
+                            LKR {product.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          </span>
                         </div>
-                        <div className="flex items-center text-sm text-slate-600">
-                          <Box className="w-4 h-4 mr-1" />
-                          {product.quantity} in stock
+                        <div className="flex items-center text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
+                          <Box className="w-3 h-3 mr-1" />
+                          {product.quantity} Left
                         </div>
                       </div>
 
                       <button
                         onClick={() => handleAddToCart(product)}
                         disabled={product.quantity === 0}
-                        className="w-full flex items-center justify-center px-4 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:bg-slate-200 disabled:text-slate-500 disabled:cursor-not-allowed font-semibold transition-all duration-200"
+                        className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed font-bold transition-all duration-200 shadow-sm active:scale-95"
                       >
                         <ShoppingCart className="w-5 h-5 mr-2" />
-                        {product.quantity === 0 ? 'Out of Stock' : 'Add to Cart'}
+                        {product.quantity === 0 ? 'Restocking' : 'Add to Cart'}
                       </button>
                     </div>
                   </div>
@@ -432,18 +439,19 @@ const Shop = () => {
 
             {/* Pagination */}
             {pagination.totalPages > 1 && (
-              <div className="flex justify-center items-center space-x-2 mt-8">
+              <div className="flex justify-center items-center space-x-2 mt-12 pb-8">
                 <button
                   onClick={() => setPagination({ ...pagination, currentPage: pagination.currentPage - 1 })}
                   disabled={pagination.currentPage === 1}
-                  className="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-semibold"
                 >
                   Previous
                 </button>
                 
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-2">
                   {[...Array(pagination.totalPages)].map((_, index) => {
                     const page = index + 1;
+                    // Logic to show limited pages
                     if (
                       page === 1 ||
                       page === pagination.totalPages ||
@@ -453,10 +461,10 @@ const Shop = () => {
                         <button
                           key={page}
                           onClick={() => setPagination({ ...pagination, currentPage: page })}
-                          className={`px-4 py-2 rounded-lg transition-colors ${
+                          className={`w-10 h-10 rounded-xl font-bold transition-all ${
                             pagination.currentPage === page
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-white border border-slate-300 hover:bg-slate-50'
+                              ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+                              : 'bg-white border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600'
                           }`}
                         >
                           {page}
@@ -466,7 +474,7 @@ const Shop = () => {
                       page === pagination.currentPage - 2 ||
                       page === pagination.currentPage + 2
                     ) {
-                      return <span key={page} className="px-2">...</span>;
+                      return <span key={page} className="text-slate-400 font-bold px-1">...</span>;
                     }
                     return null;
                   })}
@@ -475,7 +483,7 @@ const Shop = () => {
                 <button
                   onClick={() => setPagination({ ...pagination, currentPage: pagination.currentPage + 1 })}
                   disabled={pagination.currentPage === pagination.totalPages}
-                  className="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-semibold"
                 >
                   Next
                 </button>

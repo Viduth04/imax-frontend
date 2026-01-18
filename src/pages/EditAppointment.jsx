@@ -1,10 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Calendar, Clock, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Calendar, Clock, CheckCircle, AlertCircle, ArrowLeft, Wrench } from 'lucide-react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import toast from 'react-hot-toast';
-import api from '../api';
+import api from '../api'; // Using your configured axios instance
+
+const ISSUE_TYPES = [
+  'Hardware Repair', 'Software Issues', 'Network Problems',
+  'Data Recovery', 'Virus Removal', 'General Maintenance', 'Other'
+];
+
+const TIME_SLOTS = [
+  '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00',
+  '14:00-15:00', '15:00-16:00', '16:00-17:00', '17:00-18:00'
+];
 
 const EditAppointment = () => {
   const navigate = useNavigate();
@@ -13,70 +23,26 @@ const EditAppointment = () => {
   const [availabilityStatus, setAvailabilityStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const issueTypes = [
-    'Hardware Repair',
-    'Software Issues',
-    'Network Problems',
-    'Data Recovery',
-    'Virus Removal',
-    'General Maintenance',
-    'Other'
-  ];
-
-  const timeSlots = [
-    '09:00-10:00',
-    '10:00-11:00',
-    '11:00-12:00',
-    '12:00-13:00',
-    '14:00-15:00',
-    '15:00-16:00',
-    '16:00-17:00',
-    '17:00-18:00'
-  ];
-
   const getMinDate = () => {
     const date = new Date();
     date.setDate(date.getDate() + 2);
     return date.toISOString().split('T')[0];
   };
 
-  // Validation Schema
   const validationSchema = Yup.object({
-    customerName: Yup.string()
-      .required('Name is required')
-      .min(2, 'Name must be at least 2 characters')
-      .max(50, 'Name must not exceed 50 characters')
-      .matches(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),
-    customerEmail: Yup.string()
-      .required('Email is required')
-      .email('Invalid email format')
-      .max(100, 'Email must not exceed 100 characters'),
+    customerName: Yup.string().required('Name is required').matches(/^[a-zA-Z\s]+$/, 'Letters and spaces only'),
+    customerEmail: Yup.string().required('Email is required').email('Invalid email'),
     customerPhone: Yup.string()
-      .required('Phone number is required')
-      .matches(/^[\d\s\-\+KATEX_INLINE_OPENKATEX_INLINE_CLOSE]+$/, 'Invalid phone number format')
-      .test('min-digits', 'Phone number must have at least 10 digits', (value) => {
-        if (!value) return false;
-        const digits = value.replace(/\D/g, '');
-        return digits.length >= 10;
-      })
-      .test('max-digits', 'Phone number must not exceed 15 digits', (value) => {
-        if (!value) return false;
-        const digits = value.replace(/\D/g, '');
-        return digits.length <= 15;
+      .required('Phone is required')
+      .matches(/^[\d\s\-+]+$/, 'Invalid format')
+      .test('len', 'Must be 10-15 digits', val => {
+        const d = val?.replace(/\D/g, '');
+        return d?.length >= 10 && d?.length <= 15;
       }),
-    appointmentDate: Yup.date()
-      .required('Appointment date is required')
-      .min(new Date(getMinDate()), 'Appointments must be scheduled at least 2 days in advance'),
-    timeSlot: Yup.string()
-      .required('Time slot is required')
-      .oneOf(timeSlots, 'Invalid time slot'),
-    issueType: Yup.string()
-      .required('Issue type is required')
-      .oneOf(issueTypes, 'Invalid issue type'),
-    issueDescription: Yup.string()
-      .required('Issue description is required')
-      .min(10, 'Description must be at least 10 characters')
-      .max(500, 'Description must not exceed 500 characters')
+    appointmentDate: Yup.date().required('Date is required'),
+    timeSlot: Yup.string().required('Select a time').oneOf(TIME_SLOTS),
+    issueType: Yup.string().required('Select issue type').oneOf(ISSUE_TYPES),
+    issueDescription: Yup.string().required('Required').min(10).max(500)
   });
 
   const formik = useFormik({
@@ -90,64 +56,61 @@ const EditAppointment = () => {
       issueDescription: ''
     },
     validationSchema,
-    onSubmit: async (values, { setSubmitting }) => {
+    onSubmit: async (values) => {
       try {
-        const { data } = await axios.put(`/appointments/${id}`, values);
-        if (data.success) {
-          toast.success('Appointment updated successfully!');
-          navigate('/my-appointments');
-        }
+        await api.put(`/appointments/${id}`, values);
+        toast.success('Appointment updated successfully!');
+        navigate('/my-appointments');
       } catch (error) {
-        toast.error(error.response?.data?.message || 'Failed to update appointment');
-      } finally {
-        setSubmitting(false);
+        toast.error(error.response?.data?.message || 'Update failed');
       }
     }
   });
 
+  // Fetch initial data
   useEffect(() => {
+    const fetchAppointment = async () => {
+      try {
+        const { data } = await api.get(`/appointments/${id}`);
+        if (data.success) {
+          const apt = data.appointment;
+          formik.setValues({
+            customerName: apt.customerName,
+            customerEmail: apt.customerEmail,
+            customerPhone: apt.customerPhone,
+            appointmentDate: new Date(apt.appointmentDate).toISOString().split('T')[0],
+            timeSlot: apt.timeSlot,
+            issueType: apt.issueType,
+            issueDescription: apt.issueDescription
+          });
+        }
+      } catch (error) {
+        toast.error('Could not find appointment');
+        navigate('/my-appointments');
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchAppointment();
   }, [id]);
 
-  const fetchAppointment = async () => {
-    try {
-      const { data } = await axios.get(`/appointments/${id}`);
-      if (data.success) {
-        const apt = data.appointment;
-        formik.setValues({
-          customerName: apt.customerName,
-          customerEmail: apt.customerEmail,
-          customerPhone: apt.customerPhone,
-          appointmentDate: new Date(apt.appointmentDate).toISOString().split('T')[0],
-          timeSlot: apt.timeSlot,
-          issueType: apt.issueType,
-          issueDescription: apt.issueDescription
-        });
-      }
-    } catch (error) {
-      toast.error('Failed to fetch appointment');
-      navigate('/my-appointments');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Check availability when date or time changes
+  // Debounced Availability Check
   useEffect(() => {
     const checkAvailability = async () => {
-      if (formik.values.appointmentDate && formik.values.timeSlot) {
+      // Don't check if form is still loading initial data
+      if (!loading && formik.values.appointmentDate && formik.values.timeSlot) {
         setCheckingAvailability(true);
         try {
-          const { data } = await axios.get('/appointments/check-availability', {
-            params: {
-              date: formik.values.appointmentDate,
+          const { data } = await api.get('/appointments/check-availability', {
+            params: { 
+              date: formik.values.appointmentDate, 
               timeSlot: formik.values.timeSlot,
-              excludeAppointmentId: id
+              excludeAppointmentId: id 
             }
           });
           setAvailabilityStatus(data);
         } catch (error) {
-          console.error('Failed to check availability');
+          setAvailabilityStatus({ available: false, message: "Error checking slots" });
         } finally {
           setCheckingAvailability(false);
         }
@@ -156,234 +119,147 @@ const EditAppointment = () => {
 
     const timer = setTimeout(checkAvailability, 500);
     return () => clearTimeout(timer);
-  }, [formik.values.appointmentDate, formik.values.timeSlot, id]);
+  }, [formik.values.appointmentDate, formik.values.timeSlot, id, loading]);
 
   const InputField = ({ label, name, type = 'text', ...props }) => (
-    <div>
-      <label className="block text-sm font-semibold text-slate-700 mb-2">
-        {label} <span className="text-red-500">*</span>
-      </label>
+    <div className="flex flex-col">
+      <label className="text-sm font-bold text-slate-600 mb-1.5 ml-1">{label}</label>
       <input
         type={type}
         {...formik.getFieldProps(name)}
-        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:outline-none transition-all ${
+        className={`px-4 py-3 rounded-xl border transition-all outline-none focus:ring-4 ${
           formik.touched[name] && formik.errors[name]
-            ? 'border-red-500 focus:ring-red-200 focus:border-red-500'
-            : 'border-slate-300 focus:ring-blue-500 focus:border-transparent'
+            ? 'border-red-300 focus:ring-red-50'
+            : 'border-slate-200 focus:border-blue-500 focus:ring-blue-50'
         }`}
         {...props}
       />
       {formik.touched[name] && formik.errors[name] && (
-        <div className="mt-2 flex items-center text-red-600 text-sm">
-          <AlertCircle className="w-4 h-4 mr-1 flex-shrink-0" />
-          <span>{formik.errors[name]}</span>
-        </div>
+        <span className="text-red-500 text-xs mt-1.5 font-medium flex items-center">
+          <AlertCircle className="w-3 h-3 mr-1" /> {formik.errors[name]}
+        </span>
       )}
     </div>
   );
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center mt-16">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
+        <p className="mt-4 text-slate-500 font-medium">Loading details...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 mt-16">
-      <div className="bg-[#1A1A1A] text-white py-12">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-bold mb-2">Edit Appointment</h1>
-          <p className="text-gray-300">Update your appointment details</p>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-slate-50 pb-20 pt-24">
+      <div className="container mx-auto px-4">
         <button
           onClick={() => navigate('/my-appointments')}
-          className="flex items-center text-slate-600 hover:text-slate-900 mb-6 transition-colors"
+          className="flex items-center text-slate-500 hover:text-slate-800 mb-8 font-bold transition-colors group"
         >
-          <ArrowLeft className="w-5 h-5 mr-2" />
-          Back to My Appointments
+          <ArrowLeft className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform" />
+          Back to Appointments
         </button>
 
-        <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-            <form onSubmit={formik.handleSubmit} noValidate className="space-y-6">
-              {/* Personal Information */}
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center">
-                  <Calendar className="w-6 h-6 mr-2 text-blue-600" />
-                  Personal Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="max-w-4xl mx-auto">
+          <form onSubmit={formik.handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div className="lg:col-span-2 space-y-6">
+              {/* Profile Section */}
+              <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100">
+                <h2 className="text-lg font-black flex items-center mb-6 text-slate-800 uppercase tracking-tight">
+                  <Calendar className="w-5 h-5 mr-2 text-blue-600" /> Appointment Schedule
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <InputField label="Full Name" name="customerName" />
-                  <InputField label="Email Address" name="customerEmail" type="email" />
+                  <InputField label="Phone Number" name="customerPhone" />
                   <div className="md:col-span-2">
-                    <InputField label="Phone Number" name="customerPhone" />
+                    <InputField label="Email Address" name="customerEmail" type="email" />
                   </div>
-                </div>
-              </div>
-
-              {/* Appointment Details */}
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center">
-                  <Clock className="w-6 h-6 mr-2 text-blue-600" />
-                  Appointment Details
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <InputField
-                    label="Appointment Date"
-                    name="appointmentDate"
-                    type="date"
-                    min={getMinDate()}
-                  />
-
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Time Slot <span className="text-red-500">*</span>
-                    </label>
-                    <select
+                  <InputField label="Date" name="appointmentDate" type="date" min={getMinDate()} />
+                  <div className="flex flex-col">
+                    <label className="text-sm font-bold text-slate-600 mb-1.5 ml-1">Time Slot</label>
+                    <select 
                       {...formik.getFieldProps('timeSlot')}
-                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:outline-none transition-all ${
-                        formik.touched.timeSlot && formik.errors.timeSlot
-                          ? 'border-red-500 focus:ring-red-200 focus:border-red-500'
-                          : 'border-slate-300 focus:ring-blue-500 focus:border-transparent'
-                      }`}
+                      className="px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none h-[50px]"
                     >
-                      <option value="">Select Time Slot</option>
-                      {timeSlots.map((slot) => (
-                        <option key={slot} value={slot}>{slot}</option>
-                      ))}
+                      {TIME_SLOTS.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
-                    {formik.touched.timeSlot && formik.errors.timeSlot && (
-                      <div className="mt-2 flex items-center text-red-600 text-sm">
-                        <AlertCircle className="w-4 h-4 mr-1 flex-shrink-0" />
-                        <span>{formik.errors.timeSlot}</span>
-                      </div>
-                    )}
                   </div>
-
-                  {/* Availability Status */}
-                  {formik.values.appointmentDate && formik.values.timeSlot && (
-                    <div className="md:col-span-2">
-                      {checkingAvailability ? (
-                        <div className="flex items-center text-slate-600 text-sm">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                          Checking availability...
-                        </div>
-                      ) : availabilityStatus && (
-                        <div className={`p-4 rounded-xl flex items-center ${
-                          availabilityStatus.available
-                            ? 'bg-green-50 border border-green-200'
-                            : 'bg-red-50 border border-red-200'
-                        }`}>
-                          {availabilityStatus.available ? (
-                            <CheckCircle className="w-5 h-5 text-green-600 mr-2 flex-shrink-0" />
-                          ) : (
-                            <AlertCircle className="w-5 h-5 text-red-600 mr-2 flex-shrink-0" />
-                          )}
-                          <span className={`text-sm font-medium ${
-                            availabilityStatus.available ? 'text-green-800' : 'text-red-800'
-                          }`}>
-                            {availabilityStatus.message}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
+
+                {/* Availability Bar */}
+                {availabilityStatus && (
+                  <div className={`mt-6 p-4 rounded-2xl border flex items-center gap-3 ${
+                    checkingAvailability ? 'bg-slate-50 border-slate-200' :
+                    availabilityStatus.available ? 'bg-emerald-50 border-emerald-100 text-emerald-800' : 
+                    'bg-red-50 border-red-100 text-red-800'
+                  }`}>
+                    {checkingAvailability ? <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full" /> : 
+                     availabilityStatus.available ? <CheckCircle className="w-5 h-5 text-emerald-500" /> : <AlertCircle className="w-5 h-5 text-red-500" />}
+                    <span className="text-sm font-bold">{checkingAvailability ? 'Checking...' : availabilityStatus.message}</span>
+                  </div>
+                )}
               </div>
 
-              {/* Issue Details */}
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center">
-                  Issue Details
-                </h3>
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Issue Type <span className="text-red-500">*</span>
-                    </label>
-                    <select
+              {/* Issue Section */}
+              <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-slate-100">
+                <h2 className="text-lg font-black flex items-center mb-6 text-slate-800 uppercase tracking-tight">
+                  <Wrench className="w-5 h-5 mr-2 text-blue-600" /> Issue Details
+                </h2>
+                <div className="space-y-5">
+                  <div className="flex flex-col">
+                    <label className="text-sm font-bold text-slate-600 mb-1.5 ml-1">Issue Type</label>
+                    <select 
                       {...formik.getFieldProps('issueType')}
-                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:outline-none transition-all ${
-                        formik.touched.issueType && formik.errors.issueType
-                          ? 'border-red-500 focus:ring-red-200 focus:border-red-500'
-                          : 'border-slate-300 focus:ring-blue-500 focus:border-transparent'
-                      }`}
+                      className="px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none"
                     >
-                      <option value="">Select Issue Type</option>
-                      {issueTypes.map((type) => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
+                      {ISSUE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
-                    {formik.touched.issueType && formik.errors.issueType && (
-                      <div className="mt-2 flex items-center text-red-600 text-sm">
-                        <AlertCircle className="w-4 h-4 mr-1 flex-shrink-0" />
-                        <span>{formik.errors.issueType}</span>
-                      </div>
-                    )}
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-700 mb-2">
-                      Issue Description <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
+                  <div className="flex flex-col">
+                    <label className="text-sm font-bold text-slate-600 mb-1.5 ml-1">Problem Description</label>
+                    <textarea 
                       {...formik.getFieldProps('issueDescription')}
                       rows="4"
-                      className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:outline-none transition-all ${
-                        formik.touched.issueDescription && formik.errors.issueDescription
-                          ? 'border-red-500 focus:ring-red-200 focus:border-red-500'
-                          : 'border-slate-300 focus:ring-blue-500 focus:border-transparent'
-                      }`}
-                      maxLength={500}
+                      className="px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none"
                     />
-                    <div className="flex justify-between items-center mt-2">
-                      <div>
-                        {formik.touched.issueDescription && formik.errors.issueDescription && (
-                          <div className="flex items-center text-red-600 text-sm">
-                            <AlertCircle className="w-4 h-4 mr-1 flex-shrink-0" />
-                            <span>{formik.errors.issueDescription}</span>
-                          </div>
-                        )}
-                      </div>
-                      <span className="text-xs text-slate-500">
-                        {formik.values.issueDescription.length}/500
-                      </span>
+                    <div className="flex justify-end mt-2">
+                       <span className="text-xs font-bold text-slate-400">{formik.values.issueDescription.length}/500</span>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* Submit Button */}
-              <div className="flex justify-end space-x-4 pt-6 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => navigate('/my-appointments')}
-                  className="px-6 py-3 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
+            {/* Actions Sidebar */}
+            <div className="lg:col-span-1">
+              <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 sticky top-24">
+                <h3 className="font-black text-slate-900 mb-4 uppercase tracking-widest text-xs">Update Control</h3>
+                <p className="text-xs text-slate-500 mb-6 leading-relaxed">
+                  Changing the date or time will re-verify technician availability. Changes are permanent once saved.
+                </p>
+                
                 <button
                   type="submit"
                   disabled={formik.isSubmitting || !formik.isValid || (availabilityStatus && !availabilityStatus.available)}
-                  className="px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  className="w-full py-4 bg-slate-900 hover:bg-black disabled:bg-slate-200 text-white rounded-2xl font-black transition-all active:scale-95 mb-3"
                 >
-                  {formik.isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      Updating...
-                    </>
-                  ) : (
-                    'Update Appointment'
-                  )}
+                  {formik.isSubmitting ? "UPDATING..." : "SAVE CHANGES"}
+                </button>
+                
+                <button 
+                  type="button" 
+                  onClick={() => navigate('/my-appointments')}
+                  className="w-full py-4 text-slate-400 font-bold text-sm hover:text-red-500 transition-colors"
+                >
+                  DISCARD CHANGES
                 </button>
               </div>
-            </form>
-          </div>
+            </div>
+
+          </form>
         </div>
       </div>
     </div>

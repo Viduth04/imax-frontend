@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock, User, Edit2, X as XIcon, CheckCircle, AlertCircle, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api';
+import api from '../api'; // Your custom axios instance
 
 const UserAppointments = () => {
   const navigate = useNavigate();
@@ -16,7 +16,8 @@ const UserAppointments = () => {
   const fetchAppointments = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get('/appointments/my-appointments');
+      // Fixed: Using the imported 'api' instance
+      const { data } = await api.get('/appointments/my-appointments');
       if (data.success) {
         setAppointments(data.appointments);
       }
@@ -31,7 +32,8 @@ const UserAppointments = () => {
     if (!window.confirm('Are you sure you want to cancel this appointment?')) return;
 
     try {
-      const { data } = await axios.put(`/appointments/${id}/cancel`);
+      // Fixed: Using the imported 'api' instance
+      const { data } = await api.put(`/appointments/${id}/cancel`);
       if (data.success) {
         toast.success('Appointment cancelled successfully');
         fetchAppointments();
@@ -57,15 +59,14 @@ const UserAppointments = () => {
       return false;
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const oneDayFromNow = new Date(today);
-    oneDayFromNow.setDate(oneDayFromNow.getDate() + 1);
-
+    // Cancellation Policy: Allowed if appointment is more than 24 hours away
+    const now = new Date();
     const appointmentDate = new Date(appointment.appointmentDate);
-    appointmentDate.setHours(0, 0, 0, 0);
+    
+    const timeDiff = appointmentDate.getTime() - now.getTime();
+    const hoursDiff = timeDiff / (1000 * 3600);
 
-    return appointmentDate > oneDayFromNow;
+    return hoursDiff > 24;
   };
 
   const canEditAppointment = (appointment) => {

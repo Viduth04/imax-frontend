@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Calendar, Clock, User, Trash2, Filter, UserCheck, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Calendar, Clock, User, Trash2, Filter, UserCheck, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import toast from 'react-hot-toast';
-import api from '../api';
+import api from '../api'; // Crucial: Using your custom instance
 
 const AppointmentManagement = () => {
   const [appointments, setAppointments] = useState([]);
@@ -19,43 +19,37 @@ const AppointmentManagement = () => {
     total: 0
   });
 
-  useEffect(() => {
-    fetchAppointments();
-    fetchTechnicians();
-    fetchStats();
-  }, [filterStatus, pagination.currentPage]);
-
-  const fetchAppointments = async () => {
+  // Memoized fetch functions to prevent effect loops
+  const fetchAppointments = useCallback(async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
+      const params = {
         page: pagination.currentPage,
         limit: 10,
         ...(filterStatus && { status: filterStatus })
-      });
+      };
 
-      const { data } = await axios.get(`/appointments?${params}`);
+      // api instance automatically prepends the baseURL
+      const { data } = await api.get('/appointments', { params });
       if (data.success) {
         setAppointments(data.appointments);
-        setPagination({
-          currentPage: data.currentPage,
+        setPagination(prev => ({
+          ...prev,
           totalPages: data.totalPages,
           total: data.total
-        });
+        }));
       }
     } catch (error) {
       toast.error('Failed to fetch appointments');
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.currentPage, filterStatus]);
 
   const fetchTechnicians = async () => {
     try {
-      const { data } = await axios.get('/technicians?status=active');
-      if (data.success) {
-        setTechnicians(data.technicians);
-      }
+      const { data } = await api.get('/technicians?status=active');
+      if (data.success) setTechnicians(data.technicians);
     } catch (error) {
       console.error('Failed to fetch technicians');
     }
@@ -63,29 +57,28 @@ const AppointmentManagement = () => {
 
   const fetchStats = async () => {
     try {
-      const { data } = await axios.get('/appointments/stats/overview');
-      if (data.success) {
-        setStats(data.stats);
-      }
+      const { data } = await api.get('/appointments/stats/overview');
+      if (data.success) setStats(data.stats);
     } catch (error) {
       console.error('Failed to fetch stats');
     }
   };
 
-  // Assign Technician Validation
-  const assignValidationSchema = Yup.object({
-    technicianId: Yup.string()
-      .required('Please select a technician')
-  });
+  useEffect(() => {
+    fetchAppointments();
+    fetchTechnicians();
+    fetchStats();
+  }, [fetchAppointments]);
 
+  // Formik logic
   const assignFormik = useFormik({
-    initialValues: {
-      technicianId: ''
-    },
-    validationSchema: assignValidationSchema,
+    initialValues: { technicianId: '' },
+    validationSchema: Yup.object({
+      technicianId: Yup.string().required('Please select a technician')
+    }),
     onSubmit: async (values, { setSubmitting, resetForm }) => {
       try {
-        const { data } = await axios.put(
+        const { data } = await api.put(
           `/appointments/${selectedAppointment._id}/assign-technician`,
           values
         );
@@ -106,11 +99,11 @@ const AppointmentManagement = () => {
 
   const handleStatusUpdate = async (appointmentId, newStatus) => {
     try {
-      const { data } = await axios.put(`/appointments/${appointmentId}/status`, {
+      const { data } = await api.put(`/appointments/${appointmentId}/status`, {
         status: newStatus
       });
       if (data.success) {
-        toast.success('Status updated successfully');
+        toast.success(`Status updated to ${newStatus}`);
         fetchAppointments();
         fetchStats();
       }
@@ -120,24 +113,17 @@ const AppointmentManagement = () => {
   };
 
   const handleDelete = async (appointmentId) => {
-    if (!window.confirm('Are you sure you want to delete this appointment?')) return;
-
+    if (!window.confirm('Delete this appointment permanently?')) return;
     try {
-      const { data } = await axios.delete(`/appointments/${appointmentId}`);
+      const { data } = await api.delete(`/appointments/${appointmentId}`);
       if (data.success) {
-        toast.success('Appointment deleted successfully');
+        toast.success('Deleted successfully');
         fetchAppointments();
         fetchStats();
       }
     } catch (error) {
-      toast.error('Failed to delete appointment');
+      toast.error('Failed to delete');
     }
-  };
-
-  const handleAssignTechnician = (appointment) => {
-    setSelectedAppointment(appointment);
-    assignFormik.setFieldValue('technicianId', appointment.technician?._id || '');
-    setShowAssignModal(true);
   };
 
   const getStatusConfig = (status) => {
@@ -152,57 +138,27 @@ const AppointmentManagement = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-2xl shadow-sm p-6 border border-slate-200">
-        <h2 className="text-2xl font-bold text-slate-900 flex items-center">
-          <Calendar className="w-7 h-7 mr-3 text-blue-600" />
-          Appointment Management
-        </h2>
-        <p className="text-slate-600 mt-1">Manage customer repair appointments</p>
-      </div>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <div className="bg-white rounded-xl shadow-sm p-4 border border-slate-200">
-          <p className="text-sm text-slate-600 mb-1">Total</p>
-          <p className="text-2xl font-bold text-slate-900">{stats.totalAppointments || 0}</p>
+    <div className="space-y-6 pb-10">
+      {/* Header & Stats Grid */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 flex items-center">
+            <Calendar className="w-7 h-7 mr-3 text-blue-600" />
+            Appointments
+          </h2>
         </div>
-        <div className="bg-yellow-50 rounded-xl shadow-sm p-4 border border-yellow-200">
-          <p className="text-sm text-yellow-700 mb-1">Pending</p>
-          <p className="text-2xl font-bold text-yellow-800">{stats.pendingAppointments || 0}</p>
-        </div>
-        <div className="bg-blue-50 rounded-xl shadow-sm p-4 border border-blue-200">
-          <p className="text-sm text-blue-700 mb-1">Confirmed</p>
-          <p className="text-2xl font-bold text-blue-800">{stats.confirmedAppointments || 0}</p>
-        </div>
-        <div className="bg-purple-50 rounded-xl shadow-sm p-4 border border-purple-200">
-          <p className="text-sm text-purple-700 mb-1">In Progress</p>
-          <p className="text-2xl font-bold text-purple-800">{stats.inProgressAppointments || 0}</p>
-        </div>
-        <div className="bg-green-50 rounded-xl shadow-sm p-4 border border-green-200">
-          <p className="text-sm text-green-700 mb-1">Completed</p>
-          <p className="text-2xl font-bold text-green-800">{stats.completedAppointments || 0}</p>
-        </div>
-        <div className="bg-red-50 rounded-xl shadow-sm p-4 border border-red-200">
-          <p className="text-sm text-red-700 mb-1">Cancelled</p>
-          <p className="text-2xl font-bold text-red-800">{stats.cancelledAppointments || 0}</p>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-2xl shadow-sm p-4 border border-slate-200">
-        <div className="flex items-center space-x-4">
-          <Filter className="w-5 h-5 text-slate-500" />
+        
+        <div className="flex items-center space-x-3 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
+          <Filter className="w-4 h-4 text-slate-400 ml-2" />
           <select
             value={filterStatus}
             onChange={(e) => {
               setFilterStatus(e.target.value);
-              setPagination({ ...pagination, currentPage: 1 });
+              setPagination(p => ({ ...p, currentPage: 1 }));
             }}
-            className="px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="border-none focus:ring-0 text-sm font-medium text-slate-600"
           >
-            <option value="">All Appointments</option>
+            <option value="">All Statuses</option>
             <option value="pending">Pending</option>
             <option value="confirmed">Confirmed</option>
             <option value="in-progress">In Progress</option>
@@ -212,218 +168,197 @@ const AppointmentManagement = () => {
         </div>
       </div>
 
-      {/* Appointments Table */}
+      {/* Stats Dashboard */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {[
+          { label: 'Total', val: stats.totalAppointments, color: 'slate' },
+          { label: 'Pending', val: stats.pendingAppointments, color: 'yellow' },
+          { label: 'Confirmed', val: stats.confirmedAppointments, color: 'blue' },
+          { label: 'Active', val: stats.inProgressAppointments, color: 'purple' },
+          { label: 'Done', val: stats.completedAppointments, color: 'green' },
+          { label: 'Nulled', val: stats.cancelledAppointments, color: 'red' },
+        ].map((item) => (
+          <div key={item.label} className={`bg-white rounded-xl p-4 border-b-4 border-${item.color}-500 shadow-sm`}>
+            <p className="text-xs font-semibold text-slate-500 uppercase">{item.label}</p>
+            <p className="text-xl font-bold text-slate-900">{item.val || 0}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Main Table Section */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="flex flex-col items-center justify-center py-24">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600 mb-4"></div>
+            <p className="text-slate-500 font-medium">Loading appointments...</p>
+          </div>
+        ) : appointments.length === 0 ? (
+          <div className="text-center py-24">
+            <div className="bg-slate-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Calendar className="w-8 h-8 text-slate-300" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900">No appointments found</h3>
+            <p className="text-slate-500">Try adjusting your filters or check back later.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Appointment
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Date & Time
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Issue
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Technician
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">ID / Created</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Customer</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Schedule</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Technician</th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Status</th>
+                  <th className="px-6 py-4 text-right text-xs font-bold text-slate-500 uppercase">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-slate-200">
-                {appointments.map((appointment) => {
-                  const statusConfig = getStatusConfig(appointment.status);
-
-                  return (
-                    <tr key={appointment._id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="font-semibold text-slate-900">{appointment.appointmentNumber}</p>
-                          <p className="text-sm text-slate-500">
-                            {new Date(appointment.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="font-medium text-slate-900">{appointment.customerName}</p>
-                          <p className="text-sm text-slate-500">{appointment.customerEmail}</p>
-                          <p className="text-sm text-slate-500">{appointment.customerPhone}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="font-medium text-slate-900">
-                            {new Date(appointment.appointmentDate).toLocaleDateString()}
-                          </p>
-                          <p className="text-sm text-slate-500">{appointment.timeSlot}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="max-w-xs">
-                          <p className="font-medium text-slate-900">{appointment.issueType}</p>
-                          <p className="text-sm text-slate-500 line-clamp-2">
-                            {appointment.issueDescription}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        {appointment.technician ? (
-                          <div>
-                            <p className="font-medium text-blue-600">{appointment.technician.name}</p>
-                            <p className="text-sm text-slate-500">{appointment.technician.specialization}</p>
+              <tbody className="divide-y divide-slate-200 bg-white">
+                {appointments.map((apt) => (
+                  <tr key={apt._id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <span className="font-mono text-sm font-bold text-blue-600">{apt.appointmentNumber}</span>
+                      <p className="text-xs text-slate-400 mt-1">{new Date(apt.createdAt).toLocaleDateString()}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="font-semibold text-slate-800">{apt.customerName}</p>
+                      <p className="text-xs text-slate-500">{apt.customerPhone}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center text-sm text-slate-700 font-medium">
+                        <Clock className="w-3.5 h-3.5 mr-1.5 text-slate-400" />
+                        {new Date(apt.appointmentDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </div>
+                      <p className="text-xs text-slate-500 ml-5">{apt.timeSlot}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      {apt.technician ? (
+                        <div className="flex items-center">
+                          <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold mr-2">
+                            {apt.technician.name.charAt(0)}
                           </div>
-                        ) : (
-                          <button
-                            onClick={() => handleAssignTechnician(appointment)}
-                            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                          >
-                            Assign Technician
-                          </button>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <select
-                          value={appointment.status}
-                          onChange={(e) => handleStatusUpdate(appointment._id, e.target.value)}
-                          className={`px-3 py-1 rounded-lg font-semibold text-sm border-0 ${statusConfig.color}`}
-                          disabled={appointment.status === 'cancelled' || appointment.status === 'completed'}
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="confirmed">Confirmed</option>
-                          <option value="in-progress">In Progress</option>
-                          <option value="completed">Completed</option>
-                          <option value="cancelled">Cancelled</option>
-                        </select>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-2">
-                          {!appointment.technician && (
-                            <button
-                              onClick={() => handleAssignTechnician(appointment)}
-                              className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="Assign Technician"
-                            >
-                              <UserCheck className="w-5 h-5" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDelete(appointment._id)}
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
+                          <span className="text-sm font-medium text-slate-700">{apt.technician.name}</span>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                      ) : (
+                        <button 
+                          onClick={() => { setSelectedAppointment(apt); setShowAssignModal(true); }}
+                          className="text-xs font-bold text-blue-600 hover:underline"
+                        >
+                          + Assign Tech
+                        </button>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <select
+                        value={apt.status}
+                        onChange={(e) => handleStatusUpdate(apt._id, e.target.value)}
+                        className={`text-xs font-bold px-2.5 py-1 rounded-full border-none ring-1 ring-inset ${getStatusConfig(apt.status).color} cursor-pointer focus:ring-2`}
+                        disabled={['completed', 'cancelled'].includes(apt.status)}
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="in-progress">Active</option>
+                        <option value="completed">Done</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button 
+                        onClick={() => handleDelete(apt._id)}
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* Pagination */}
+      {/* Modern Pagination */}
       {pagination.totalPages > 1 && (
-        <div className="flex justify-center items-center space-x-2">
-          <button
-            onClick={() => setPagination({ ...pagination, currentPage: pagination.currentPage - 1 })}
-            disabled={pagination.currentPage === 1}
-            className="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Previous
-          </button>
-          <span className="px-4 py-2 text-slate-700">
-            Page {pagination.currentPage} of {pagination.totalPages}
-          </span>
-          <button
-            onClick={() => setPagination({ ...pagination, currentPage: pagination.currentPage + 1 })}
-            disabled={pagination.currentPage === pagination.totalPages}
-            className="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Next
-          </button>
+        <div className="flex items-center justify-between bg-white px-6 py-4 rounded-xl border border-slate-200 shadow-sm">
+          <p className="text-sm text-slate-500">
+            Showing <span className="font-semibold text-slate-900">{appointments.length}</span> of <span className="font-semibold text-slate-900">{pagination.total}</span>
+          </p>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setPagination(p => ({ ...p, currentPage: p.currentPage - 1 }))}
+              disabled={pagination.currentPage === 1}
+              className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-30"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setPagination(p => ({ ...p, currentPage: p.currentPage + 1 }))}
+              disabled={pagination.currentPage === pagination.totalPages}
+              className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 disabled:opacity-30"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Assign Technician Modal */}
+      {/* Technician Assignment Modal */}
       {showAssignModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center">
-              <UserCheck className="w-6 h-6 mr-2 text-blue-600" />
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl animate-in zoom-in duration-200">
+            <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center">
+              <UserCheck className="w-6 h-6 mr-3 text-blue-600" />
               Assign Technician
             </h3>
 
-            <div className="mb-4 p-4 bg-slate-50 rounded-xl">
-              <p className="text-sm text-slate-600 mb-1">Appointment</p>
-              <p className="font-semibold text-slate-900">{selectedAppointment?.appointmentNumber}</p>
-              <p className="text-sm text-slate-600 mt-2">Issue: {selectedAppointment?.issueType}</p>
+            <div className="mb-6 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-bold text-blue-600 uppercase mb-1">Appointment</p>
+                  <p className="font-bold text-slate-900">{selectedAppointment?.appointmentNumber}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-bold text-blue-600 uppercase mb-1">Issue</p>
+                  <p className="text-sm font-medium text-slate-700">{selectedAppointment?.issueType}</p>
+                </div>
+              </div>
             </div>
 
-            <form onSubmit={assignFormik.handleSubmit} className="space-y-4">
+            <form onSubmit={assignFormik.handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
-                  Select Technician <span className="text-red-500">*</span>
-                </label>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Select Expert</label>
                 <select
                   {...assignFormik.getFieldProps('technicianId')}
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:outline-none transition-all ${
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 transition-all ${
                     assignFormik.touched.technicianId && assignFormik.errors.technicianId
-                      ? 'border-red-500 focus:ring-red-200 focus:border-red-500'
-                      : 'border-slate-300 focus:ring-blue-500 focus:border-transparent'
+                      ? 'border-red-500 focus:ring-red-100'
+                      : 'border-slate-200 focus:ring-blue-100 focus:border-blue-500'
                   }`}
                 >
-                  <option value="">Select a technician</option>
+                  <option value="">Choose technician...</option>
                   {technicians.map((tech) => (
                     <option key={tech._id} value={tech._id}>
-                      {tech.name} - {tech.specialization} ({tech.experience} years exp)
+                      {tech.name} ({tech.specialization})
                     </option>
                   ))}
                 </select>
-                {assignFormik.touched.technicianId && assignFormik.errors.technicianId && (
-                  <div className="mt-2 flex items-center text-red-600 text-sm">
-                    <AlertCircle className="w-4 h-4 mr-1 flex-shrink-0" />
-                    <span>{assignFormik.errors.technicianId}</span>
-                  </div>
-                )}
               </div>
 
-              <div className="flex justify-end space-x-3 pt-4">
+              <div className="flex space-x-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowAssignModal(false);
-                    assignFormik.resetForm();
-                  }}
-                  className="px-6 py-3 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-50"
+                  onClick={() => { setShowAssignModal(false); assignFormik.resetForm(); }}
+                  className="flex-1 py-3 border border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={assignFormik.isSubmitting || !assignFormik.isValid}
-                  className="px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50"
+                  className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all disabled:opacity-50"
                 >
-                  {assignFormik.isSubmitting ? 'Assigning...' : 'Assign Technician'}
+                  {assignFormik.isSubmitting ? 'Assigning...' : 'Confirm'}
                 </button>
               </div>
             </form>

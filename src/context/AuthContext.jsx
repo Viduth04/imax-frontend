@@ -1,12 +1,11 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../api';
+import api from '../api'; // This handles the URL and Credentials automatically
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
 
-axios.defaults.baseURL = 'http://localhost:5000/api';
-axios.defaults.withCredentials = true;
+// REMOVED: axios.defaults.baseURL and withCredentials (handled in api.js)
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -27,7 +26,8 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuth = async () => {
     try {
-      const { data } = await axios.get('/auth/me');
+      // Changed to api.get
+      const { data } = await api.get('/auth/me'); 
       if (data.success) {
         setUser(data.user);
       }
@@ -38,15 +38,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // In AuthContext.jsx, update the login function:
   const login = async (email, password) => {
     try {
-      const { data } = await axios.post('/auth/login', { email, password });
+      // Changed to api.post
+      const { data } = await api.post('/auth/login', { email, password });
       if (data.success) {
         setUser(data.user);
         toast.success('Login successful!');
 
-        // Redirect based on role
         if (data.user.role === 'admin') {
           navigate('/admin/dashboard');
         } else if (data.user.role === 'technician') {
@@ -63,7 +62,8 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     try {
-      const { data } = await axios.post('/auth/register', { name, email, password });
+      // Changed to api.post
+      const { data } = await api.post('/auth/register', { name, email, password });
       if (data.success) {
         setUser(data.user);
         toast.success('Registration successful!');
@@ -77,7 +77,8 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post('/auth/logout');
+      // Changed to api.post
+      await api.post('/auth/logout');
       setUser(null);
       toast.success('Logged out successfully');
       navigate('/');

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Package, Clock, Truck, CheckCircle, XCircle, MapPin, CreditCard, Calendar, DollarSign, Edit2, X as XIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import api from '../api';
+import api from '../api'; // This is your configured axios instance
 import * as Yup from 'yup';
 
 const UserOrders = () => {
@@ -26,7 +26,7 @@ const UserOrders = () => {
     phone: Yup.string()
       .required('Phone number is required')
       .matches(
-        /^[\d\s\+\-KATEX_INLINE_OPENKATEX_INLINE_CLOSE]+$/,
+        /^[\d\s\+\-]+$/, // Fixed regex: removed KATEX placeholders
         'Please enter a valid phone number'
       )
       .min(10, 'Phone number must be at least 10 digits')
@@ -56,14 +56,11 @@ const UserOrders = () => {
       .matches(/^[a-zA-Z\s]+$/, 'Country name can only contain letters and spaces')
   });
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
-
-  const fetchOrders = async () => {
+  // Wrapped in useCallback to prevent unnecessary re-renders
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get('/orders/my-orders');
+      const { data } = await api.get('/orders/my-orders'); // Changed from axios to api
       if (data.success) {
         setOrders(data.orders);
       }
@@ -72,13 +69,17 @@ const UserOrders = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   const handleCancelOrder = async (orderId) => {
     if (!window.confirm('Are you sure you want to cancel this order?')) return;
 
     try {
-      const { data } = await axios.put(`/orders/${orderId}/cancel`);
+      const { data } = await api.put(`/orders/${orderId}/cancel`); // Changed from axios to api
       if (data.success) {
         toast.success('Order cancelled successfully');
         fetchOrders();
@@ -111,13 +112,11 @@ const UserOrders = () => {
     }
   };
 
-  // Handle input change with validation
   const handleAddressChange = (field, value) => {
     setEditAddress({ ...editAddress, [field]: value });
     validateField(field, value);
   };
 
-  // Handle blur event
   const handleBlur = (field, value) => {
     validateField(field, value);
   };
@@ -128,10 +127,9 @@ const UserOrders = () => {
     setFormErrors({});
 
     try {
-      // Validate entire form
       await addressValidationSchema.validate(editAddress, { abortEarly: false });
 
-      const { data } = await axios.put(`/orders/${selectedOrder._id}/address`, {
+      const { data } = await api.put(`/orders/${selectedOrder._id}/address`, { // Changed from axios to api
         shippingAddress: editAddress
       });
 
@@ -143,7 +141,6 @@ const UserOrders = () => {
       }
     } catch (error) {
       if (error.name === 'ValidationError') {
-        // Yup validation errors
         const errors = {};
         error.inner.forEach(err => {
           errors[err.path] = err.message;
@@ -151,7 +148,6 @@ const UserOrders = () => {
         setFormErrors(errors);
         toast.error('Please fix the form errors');
 
-        // Scroll to first error
         setTimeout(() => {
           const firstErrorField = document.querySelector('.border-red-500');
           if (firstErrorField) {
@@ -345,7 +341,6 @@ const UserOrders = () => {
                     </div>
                   </div>
 
-                  {/* Order Notes */}
                   {order.notes && (
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
                       <p className="text-sm font-semibold text-blue-900 mb-1">Order Notes:</p>
@@ -353,7 +348,6 @@ const UserOrders = () => {
                     </div>
                   )}
 
-                  {/* Actions */}
                   {order.status !== 'delivered' && order.status !== 'cancelled' && (
                     <div className="flex justify-end">
                       <button
@@ -365,7 +359,6 @@ const UserOrders = () => {
                     </div>
                   )}
 
-                  {/* Delivery Info */}
                   {order.deliveredAt && (
                     <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
                       <p className="text-sm text-green-800">
@@ -388,7 +381,6 @@ const UserOrders = () => {
         </div>
       )}
 
-      {/* Edit Address Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-2xl w-full my-8 shadow-2xl">
@@ -407,7 +399,6 @@ const UserOrders = () => {
 
             <form onSubmit={handleUpdateAddress} className="p-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Full Name */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Full Name <span className="text-red-500">*</span>
@@ -431,7 +422,6 @@ const UserOrders = () => {
                   )}
                 </div>
 
-                {/* Phone */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Phone <span className="text-red-500">*</span>
@@ -455,7 +445,6 @@ const UserOrders = () => {
                   )}
                 </div>
 
-                {/* Postal Code */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Postal Code <span className="text-red-500">*</span>
@@ -479,7 +468,6 @@ const UserOrders = () => {
                   )}
                 </div>
 
-                {/* Address */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Address <span className="text-red-500">*</span>
@@ -503,7 +491,6 @@ const UserOrders = () => {
                   )}
                 </div>
 
-                {/* City */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
                     City <span className="text-red-500">*</span>
@@ -527,7 +514,6 @@ const UserOrders = () => {
                   )}
                 </div>
 
-                {/* Country */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Country <span className="text-red-500">*</span>
@@ -552,7 +538,6 @@ const UserOrders = () => {
                 </div>
               </div>
 
-              {/* Error Summary */}
               {Object.keys(formErrors).length > 0 && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
                   <p className="text-sm text-red-800 font-semibold mb-2">
