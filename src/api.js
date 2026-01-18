@@ -1,12 +1,9 @@
-import api from '../api';
-
-// This will help us debug in the browser console
-console.log("Current Backend URL:", import.meta.env.VITE_BACKEND_URL);
+import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL, 
-  withCredentials: true,
+  // This automatically picks the right URL based on where the app is running
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  withCredentials: true
 });
 
 export default api;
-//
