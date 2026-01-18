@@ -3,7 +3,7 @@ import { Users, UserPlus, Edit2, Trash2, X, Save, AlertCircle, Eye, EyeOff } fro
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '../api';
 
 const TechnicianManagement = () => {
   const [technicians, setTechnicians] = useState([]);

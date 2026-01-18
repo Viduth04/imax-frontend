@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { User, Lock, Trash2, Save, AlertTriangle, Mail, Package, Phone, MapPin, FileText, Calendar, Shield, Settings, Activity, Ticket, MessageSquare, Mountain } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '../api';
 import SupportTicketList from '../components/support/SupportTicketList';
 import FeedbackList from '../components/feedback/FeedbackList';
 import UserOrders from './UserOrders'

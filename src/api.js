@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from '../api';
 
 // This will help us debug in the browser console
 console.log("Current Backend URL:", import.meta.env.VITE_BACKEND_URL);

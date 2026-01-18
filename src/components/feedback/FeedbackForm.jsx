@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useFormik } from 'formik';
 import { feedbackSchema } from '../../utils/validationSchemas';
 import { Send, Star, MessageSquare, Shield, AlertCircle, Monitor, Cpu, Wifi, HardDrive, Users, Award, ThumbsUp } from 'lucide-react';
-import axios from 'axios';
+import api from '../api';
 import toast from 'react-hot-toast';
 
 const FeedbackForm = ({ onSuccess, existingFeedback = null }) => {

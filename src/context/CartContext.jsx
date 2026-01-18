@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '../api';
 
 const CartContext = createContext();
 

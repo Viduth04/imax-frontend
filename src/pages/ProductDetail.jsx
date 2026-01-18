@@ -4,7 +4,7 @@ import { ShoppingCart, ArrowLeft, Package, DollarSign, Box, Tag, Minus, Plus, St
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '../api';
 
 const ProductDetail = () => {
   const { id } = useParams();

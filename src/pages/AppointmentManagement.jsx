@@ -3,7 +3,7 @@ import { Calendar, Clock, User, Trash2, Filter, UserCheck, AlertCircle } from 'l
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '../api';
 
 const AppointmentManagement = () => {
   const [appointments, setAppointments] = useState([]);

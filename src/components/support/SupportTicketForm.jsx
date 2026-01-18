@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useFormik } from 'formik';
 import { supportTicketSchema } from '../../utils/validationSchemas';
 import { Send, Upload, X, FileText, AlertCircle, Settings, Monitor, Cpu, Wifi, HardDrive, Smartphone, Laptop, AlertTriangle, HelpCircle, CreditCard } from 'lucide-react';
-import axios from 'axios';
+import api from '../api';
 import toast from 'react-hot-toast';
 
 const SupportTicketForm = ({ onSuccess }) => {

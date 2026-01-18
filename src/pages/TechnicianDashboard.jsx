@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, Clock, CheckCircle, AlertCircle, Settings, Lock, LogOut, Trash2, User, Mail, Phone, Briefcase, Award } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '../api';
 
 const TechnicianDashboard = () => {
   const { user, logout } = useAuth();

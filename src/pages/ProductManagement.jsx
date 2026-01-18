@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Package, Plus, Edit2, Trash2, X, Save, Image as ImageIcon, Box, Tag, Search, Filter, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '../api';
 import * as Yup from 'yup';
 
 const ProductManagement = () => {

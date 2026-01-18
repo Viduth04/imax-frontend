@@ -6,7 +6,7 @@ import FeedbackList from '../components/feedback/FeedbackList';
 import ProductManagement from './ProductManagement';
 import OrderManagement from './OrderManagement';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '../api';
 import TechnicianManagement from './TechnicianManagement';
 import AppointmentManagement from './AppointmentManagement';
 const AdminDashboard = () => {

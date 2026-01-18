@@ -4,7 +4,7 @@ import { Calendar, Clock, CheckCircle, AlertCircle, ArrowLeft } from 'lucide-rea
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '../api';
 
 const EditAppointment = () => {
   const navigate = useNavigate();

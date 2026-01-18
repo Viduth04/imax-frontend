@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Package, Clock, Truck, CheckCircle, XCircle, MapPin, CreditCard, Calendar, DollarSign, Edit2, X as XIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import axios from 'axios';
+import api from '../api';
 import * as Yup from 'yup';
 
 const UserOrders = () => {
