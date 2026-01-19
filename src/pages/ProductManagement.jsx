@@ -44,11 +44,12 @@ const ProductManagement = () => {
     description: Yup.string().required('Required').min(10),
     category: Yup.string().required('Required'),
     brand: Yup.string().required('Required'),
-    price: Yup.number().required('Required').positive('Must be positive'),
+    price: Yup.number().required('Required').positive(),
     quantity: Yup.number().required('Required').min(0).integer(),
     status: Yup.string().oneOf(['active', 'inactive']),
   });
 
+  // Debounced search/filter fetch
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       fetchProducts();
@@ -93,7 +94,6 @@ const ProductManagement = () => {
 
   const handleEdit = (product) => {
     setEditingProduct(product);
-    // Crucial: Set existing images from the product
     setExistingImages(product.images || []); 
     setNewImages([]); 
     setFormData({
@@ -144,7 +144,7 @@ const ProductManagement = () => {
       
       const submitData = new FormData();
       
-      // Append basic fields
+      // Append fields
       Object.entries(formData).forEach(([key, value]) => {
         if (key === 'specifications') {
           submitData.append(key, JSON.stringify(value));
@@ -153,10 +153,10 @@ const ProductManagement = () => {
         }
       });
 
-      // SYNC IMAGES: Tell backend which old images to KEEP
+      // KEY FIX: Send existing images so backend knows what to keep
       submitData.append('existingImages', JSON.stringify(existingImages));
       
-      // Append NEW files
+      // Append new files
       newImages.forEach(file => {
         submitData.append('images', file);
       });
@@ -164,14 +164,13 @@ const ProductManagement = () => {
       const url = editingProduct ? `/products/${editingProduct._id}` : '/products';
       const method = editingProduct ? 'put' : 'post';
 
-      const { data } = await api[method](url, submitData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const { data } = await api[method](url, submitData);
 
       if (data.success) {
         toast.success(editingProduct ? 'Product Updated' : 'Product Created');
         resetForm();
-        fetchProducts();
+        // Trigger a fresh fetch to ensure UI shows new image paths
+        await fetchProducts();
       }
     } catch (error) {
       if (error.name === 'ValidationError') {
@@ -179,7 +178,7 @@ const ProductManagement = () => {
         error.inner.forEach(err => errors[err.path] = err.message);
         setFormErrors(errors);
       } else {
-        toast.error(error.response?.data?.message || 'Operation failed');
+        toast.error(error.response?.data?.message || 'Update failed');
       }
     } finally {
       setIsSubmitting(false);
@@ -188,7 +187,7 @@ const ProductManagement = () => {
 
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
-      {/* Header */}
+      {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Inventory</h1>
@@ -203,7 +202,7 @@ const ProductManagement = () => {
         </button>
       </div>
 
-      {/* Filters */}
+      {/* Filter Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="relative group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
@@ -236,7 +235,7 @@ const ProductManagement = () => {
         </select>
       </div>
 
-      {/* Product Grid */}
+      {/* Main Grid */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
@@ -247,10 +246,12 @@ const ProductManagement = () => {
           {products.map(product => (
             <div key={product._id} className="group bg-white rounded-3xl border border-slate-200 p-4 hover:shadow-xl transition-all duration-300">
                <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 mb-4">
+                  {/* FIX: Ensure image src is mapped correctly to your backend static path */}
                   <img 
-                    src={product.images && product.images.length > 0 ? product.images[0] : '/placeholder.png'} 
-                    alt={product.name} 
+                    src={product.images && product.images.length > 0 ? `${api.defaults.baseURL.replace('/api', '')}${product.images[0]}` : '/placeholder.png'} 
+                    alt="" 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    onError={(e) => { e.target.src = 'https://placehold.co/600x400?text=No+Image'; }}
                   />
                   <div className="absolute top-3 left-3 flex gap-2">
                     <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${product.status === 'active' ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white'}`}>
@@ -283,7 +284,7 @@ const ProductManagement = () => {
         </div>
       )}
 
-      {/* Modal */}
+      {/* Modal Section */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -296,100 +297,89 @@ const ProductManagement = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Product Name *</label>
-                  <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none ${formErrors.name ? 'border-red-500' : 'border-slate-300'}`} />
-                  {formErrors.name && <p className="text-red-500 text-xs mt-1 font-medium">{formErrors.name}</p>}
+                  <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Category *</label>
-                  <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                  <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" required>
                     <option value="">Select Category</option>
                     {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
-                  {formErrors.category && <p className="text-red-500 text-xs mt-1 font-medium">{formErrors.category}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Brand *</label>
-                  <input type="text" value={formData.brand} onChange={(e) => setFormData({...formData, brand: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
-                  {formErrors.brand && <p className="text-red-500 text-xs mt-1 font-medium">{formErrors.brand}</p>}
+                  <input type="text" value={formData.brand} onChange={(e) => setFormData({...formData, brand: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" required />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Price (LKR) *</label>
-                  <input type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
-                  {formErrors.price && <p className="text-red-500 text-xs mt-1 font-medium">{formErrors.price}</p>}
+                  <input type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" required />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Quantity *</label>
-                  <input type="number" value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" />
-                  {formErrors.quantity && <p className="text-red-500 text-xs mt-1 font-medium">{formErrors.quantity}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Status *</label>
-                  <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
+                  <input type="number" value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" required />
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Description *</label>
-                <textarea rows="4" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 resize-none outline-none" />
-                {formErrors.description && <p className="text-red-500 text-xs mt-1 font-medium">{formErrors.description}</p>}
+                <textarea rows="4" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 resize-none outline-none" required />
               </div>
 
-              {/* IMAGE SECTION */}
+              {/* Image Upload Area */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Product Images</label>
                 <div className="space-y-4">
-                  <div className="relative group border-2 border-dashed border-slate-300 rounded-2xl p-8 transition-colors hover:border-blue-400 text-center">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => {
-                         const files = Array.from(e.target.files);
-                         setNewImages(prev => [...prev, ...files]);
-                         e.target.value = null; 
-                      }}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    />
-                    <Upload className="w-10 h-10 text-slate-400 mx-auto mb-2 group-hover:text-blue-500" />
-                    <p className="text-slate-500 text-sm font-medium">Click or drag images to upload</p>
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-2xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-8 h-8 text-slate-400 mb-2" />
+                        <p className="text-sm text-slate-500">Click to upload new images</p>
+                      </div>
+                      <input 
+                        type="file" 
+                        multiple 
+                        accept="image/*" 
+                        className="hidden" 
+                        onChange={(e) => {
+                          const files = Array.from(e.target.files);
+                          setNewImages(prev => [...prev, ...files]);
+                        }} 
+                      />
+                    </label>
                   </div>
                   
                   {(existingImages.length > 0 || newImages.length > 0) && (
-                    <div className="flex flex-wrap gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                      {/* Current Images on Server */}
+                    <div className="flex flex-wrap gap-4 p-4 bg-white border border-slate-200 rounded-2xl">
+                      {/* Show Current Images */}
                       {existingImages.map((url, index) => (
-                        <div key={`existing-${index}`} className="relative w-24 h-24 group">
-                          <img src={url} alt="" className="w-full h-full object-cover rounded-xl shadow-md" />
+                        <div key={`existing-${index}`} className="relative w-20 h-20 group">
+                          <img src={`${api.defaults.baseURL.replace('/api', '')}${url}`} alt="" className="w-full h-full object-cover rounded-xl" />
                           <button
                             type="button"
                             onClick={() => setExistingImages(prev => prev.filter((_, i) => i !== index))}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="w-3 h-3" />
                           </button>
                         </div>
                       ))}
 
-                      {/* New Previews to be Uploaded */}
+                      {/* Show Previews of New Images */}
                       {newImages.map((file, index) => (
-                        <div key={`new-${index}`} className="relative w-24 h-24 group">
-                          <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover rounded-xl shadow-md border-2 border-blue-400" />
+                        <div key={`new-${index}`} className="relative w-20 h-20 group">
+                          <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover rounded-xl border-2 border-blue-400" />
                           <button
                             type="button"
                             onClick={() => setNewImages(prev => prev.filter((_, i) => i !== index))}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="w-3 h-3" />
                           </button>
-                          <div className="absolute -bottom-2 -left-2 bg-blue-500 text-[8px] text-white px-2 py-0.5 rounded-full font-bold">NEW</div>
                         </div>
                       ))}
                     </div>
@@ -397,10 +387,14 @@ const ProductManagement = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-4 pt-6 border-t">
+              <div className="flex justify-end gap-4 pt-4 border-t">
                 <button type="button" onClick={resetForm} className="px-6 py-3 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 font-semibold transition-colors">Cancel</button>
-                <button type="submit" disabled={isSubmitting} className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 font-semibold flex items-center gap-2 shadow-lg shadow-blue-100 transition-all">
-                  {isSubmitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</> : (editingProduct ? 'Update Product' : 'Create Product')}
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting} 
+                  className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 font-semibold flex items-center gap-2 shadow-lg shadow-blue-200 transition-all"
+                >
+                  {isSubmitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Saving...</> : (editingProduct ? 'Update Product' : 'Create Product')}
                 </button>
               </div>
             </form>
