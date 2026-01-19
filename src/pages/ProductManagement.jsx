@@ -5,18 +5,51 @@ import api from '../api.js';
 import * as Yup from 'yun';
 
 const ProductManagement = () => {
-  const BASE_URL = api.defaults.baseURL.split('/api')[0];
+  // Get base URL for serving static files (images)
+  const getBaseUrl = () => {
+    const apiBase = api.defaults.baseURL || '';
+    
+    // If VITE_BACKEND_URL is set, extract the base URL
+    if (apiBase && apiBase.includes('/api')) {
+      return apiBase.split('/api')[0];
+    }
+    
+    // For local development, use localhost:10000 (backend port)
+    if (import.meta.env.DEV) {
+      return 'http://localhost:10000';
+    }
+    
+    // For production, try to extract from env or use empty string
+    const envUrl = import.meta.env.VITE_BACKEND_URL?.trim().replace(/\/+$/, '');
+    if (envUrl) {
+      return envUrl.split('/api')[0] || envUrl;
+    }
+    
+    return '';
+  };
+
+  const BASE_URL = getBaseUrl();
 
   // Logic to handle full image pathing
   const getImageUrl = (path) => {
     if (!path) return 'https://placehold.co/400x400?text=No+Image';
-    if (path.startsWith('http')) return path;
     
-    // Ensure we don't double up on slashes
+    // If already a full URL, return as is
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    
+    // Normalize the path
     const cleanPath = path.replace(/\\/g, '/');
     const finalPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
     
-    return `${BASE_URL}${finalPath}`;
+    // Construct full URL
+    if (BASE_URL) {
+      return `${BASE_URL}${finalPath}`;
+    }
+    
+    // Fallback: return path as is (relative)
+    return finalPath;
   };
 
   const [products, setProducts] = useState([]);
@@ -75,6 +108,13 @@ const ProductManagement = () => {
       };
       const { data } = await api.get('/products', { params });
       if (data.success) {
+        // Debug: Log products with images
+        console.log('Fetched products:', data.products.length);
+        data.products.forEach(p => {
+          if (p.images && p.images.length > 0) {
+            console.log(`Product "${p.name}":`, p.images);
+          }
+        });
         setProducts(data.products);
         setPagination(prev => ({ 
           ...prev, 
@@ -83,6 +123,7 @@ const ProductManagement = () => {
         }));
       }
     } catch (error) { 
+      console.error('Error fetching products:', error);
       toast.error('Fetch failed'); 
     } finally { 
       setLoading(false); 
@@ -182,18 +223,28 @@ const ProductManagement = () => {
         <div className="flex justify-center py-20"><Loader2 className="animate-spin w-10 h-10 text-blue-600" /></div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.map(p => (
-            <div key={p._id} className="bg-white p-4 rounded-2xl shadow-sm border group hover:shadow-md transition-shadow">
-              <div className="aspect-square overflow-hidden rounded-xl bg-slate-100 mb-4">
-                <img 
-                    src={getImageUrl(p.images?.[0])} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                    alt={p.name}
-                    onError={(e) => e.target.src = 'https://placehold.co/400x400?text=Error+Loading'}
-                />
-              </div>
-              <h3 className="font-bold text-slate-800 line-clamp-1">{p.name}</h3>
-              <p className="text-blue-600 font-bold text-lg">LKR {p.price.toLocaleString()}</p>
+          {products.map(p => {
+            const firstImage = p.images && p.images.length > 0 ? p.images[0] : null;
+            const imageUrl = getImageUrl(firstImage);
+            
+            return (
+              <div key={p._id} className="bg-white p-4 rounded-2xl shadow-sm border group hover:shadow-md transition-shadow">
+                <div className="aspect-square overflow-hidden rounded-xl bg-slate-100 mb-4">
+                  <img 
+                      src={imageUrl} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      alt={p.name || 'Product'}
+                      onError={(e) => {
+                        console.error('Image load error:', imageUrl, 'Product:', p.name);
+                        e.target.src = 'https://placehold.co/400x400?text=No+Image';
+                      }}
+                      onLoad={() => {
+                        // Image loaded successfully
+                      }}
+                  />
+                </div>
+                <h3 className="font-bold text-slate-800 line-clamp-1">{p.name}</h3>
+                <p className="text-blue-600 font-bold text-lg">LKR {p.price.toLocaleString()}</p>
               
               <div className="flex gap-2 mt-4">
                 <button onClick={() => handleEdit(p)} className="flex-1 bg-slate-100 hover:bg-blue-600 hover:text-white py-2 rounded-lg flex justify-center items-center gap-2 transition-colors font-semibold text-slate-700">
@@ -204,7 +255,8 @@ const ProductManagement = () => {
                 </button>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
 

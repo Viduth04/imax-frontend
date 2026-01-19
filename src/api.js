@@ -7,7 +7,7 @@ const backendUrl = trimmed
   : undefined;
 
 // Prefer env; only fall back to localhost during local dev
-const baseURL = backendUrl || (import.meta.env.DEV ? 'http://localhost:5000/api' : '');
+const baseURL = backendUrl || (import.meta.env.DEV ? 'http://localhost:10000/api' : '');
 
 const api = axios.create({
   baseURL,
