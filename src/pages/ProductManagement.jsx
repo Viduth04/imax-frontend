@@ -63,11 +63,20 @@ const ProductManagement = () => {
       };
       const { data } = await api.get('/products', { params });
       if (data.success) {
-        // Debug: Log products with images
-        console.log('Fetched products:', data.products.length);
+        // Debug: Log products with images and constructed URLs
+        console.log('📦 Admin - Fetched products:', data.products.length);
+        console.log('🔧 API Base URL:', api.defaults.baseURL);
         data.products.forEach(p => {
           if (p.images && p.images.length > 0) {
-            console.log(`Product "${p.name}":`, p.images);
+            const imageUrl = getImageUrl(p.images[0]);
+            console.log(`  ✅ Admin Product "${p.name}":`, {
+              rawImagePath: p.images[0],
+              constructedUrl: imageUrl,
+              allImages: p.images,
+              productId: p._id
+            });
+          } else {
+            console.warn(`  ⚠️ Admin Product "${p.name}": No images`);
           }
         });
         setProducts(data.products);
@@ -145,6 +154,12 @@ const ProductManagement = () => {
 
       if (data.success) {
         toast.success(editingProduct ? 'Product Updated' : 'Product Created');
+        // Increment image cache version to force refresh on user side
+        const currentVersion = parseInt(sessionStorage.getItem('imageCacheVersion') || '1');
+        const newVersion = (currentVersion + 1).toString();
+        sessionStorage.setItem('imageCacheVersion', newVersion);
+        localStorage.setItem('imageCacheVersion', newVersion);
+        console.log('🔄 Image cache version updated to:', newVersion, 'after', editingProduct ? 'update' : 'create');
         resetForm();
         fetchProducts();
       }
