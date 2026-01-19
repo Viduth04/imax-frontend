@@ -4,7 +4,7 @@ import { Calendar, Clock, CheckCircle, AlertCircle, ArrowLeft, Wrench } from 'lu
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import toast from 'react-hot-toast';
-import api from '../api'; // Using your configured axios instance
+import api from '@/api'; // Using your configured axios instance
 
 const ISSUE_TYPES = [
   'Hardware Repair', 'Software Issues', 'Network Problems',

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock, User, Edit2, X as XIcon, CheckCircle, AlertCircle, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api'; // Your custom axios instance
+import api from '@/api'; // Your custom axios instance
 
 const UserAppointments = () => {
   const navigate = useNavigate();

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import api from '../api'; // This handles the URL and Credentials automatically
+import api from '@/api'; // This handles the URL and Credentials automatically
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 

@@ -6,7 +6,7 @@ import FeedbackList from '../components/feedback/FeedbackList';
 import ProductManagement from './ProductManagement';
 import OrderManagement from './OrderManagement';
 import toast from 'react-hot-toast';
-import api from '../api'; // Ensure this path is correct based on your folder structure
+import api from '@/api'; // Ensure this path is correct based on your folder structure
 import TechnicianManagement from './TechnicianManagement';
 import AppointmentManagement from './AppointmentManagement';
 

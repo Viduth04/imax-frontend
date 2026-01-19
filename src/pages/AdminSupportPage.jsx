@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import SupportTicketList from '../components/support/SupportTicketList';
 import FeedbackList from '../components/feedback/FeedbackList';
-import api from '../api';
+import api from '@/api';
 
 const AdminSupportPage = () => {
   const [activeTab, setActiveTab] = useState('tickets');

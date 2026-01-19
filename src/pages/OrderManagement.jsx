@@ -5,7 +5,7 @@ import {
   Trash2, Filter, Search, Download, Eye, RefreshCcw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '../api'; // Using your configured axios instance
+import api from '@/api'; // Using your configured axios instance
 
 // PDF libs
 import jsPDF from 'jspdf';
