@@ -2,17 +2,20 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, X, Search, Upload, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../api.js';
-import * as Yup from 'yup';
+import * as Yup from 'yun';
 
 const ProductManagement = () => {
   const BASE_URL = api.defaults.baseURL.split('/api')[0];
 
-  // Logic to handle paths that already start with /uploads/products
+  // Logic to handle full image pathing
   const getImageUrl = (path) => {
     if (!path) return 'https://placehold.co/400x400?text=No+Image';
     if (path.startsWith('http')) return path;
+    
+    // Ensure we don't double up on slashes
     const cleanPath = path.replace(/\\/g, '/');
     const finalPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+    
     return `${BASE_URL}${finalPath}`;
   };
 
@@ -62,13 +65,27 @@ const ProductManagement = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const params = { page: pagination.currentPage, limit: 12, search: searchQuery, category: filters.category, status: filters.status };
+      const params = { 
+        page: pagination.currentPage, 
+        limit: 12, 
+        search: searchQuery, 
+        category: filters.category, 
+        status: filters.status 
+      };
       const { data } = await api.get('/products', { params });
       if (data.success) {
         setProducts(data.products);
-        setPagination(prev => ({ ...prev, totalPages: data.totalPages, total: data.total }));
+        setPagination(prev => ({ 
+          ...prev, 
+          totalPages: data.totalPages, 
+          total: data.total 
+        }));
       }
-    } catch (error) { toast.error('Fetch failed'); } finally { setLoading(false); }
+    } catch (error) { 
+      toast.error('Fetch failed'); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const handleEdit = (product) => {
@@ -90,7 +107,11 @@ const ProductManagement = () => {
 
   const resetForm = () => {
     setFormData({ name: '', description: '', category: '', brand: '', price: '', quantity: '', status: 'active', specifications: {} });
-    setExistingImages([]); setNewImages([]); setFormErrors({}); setEditingProduct(null); setShowModal(false);
+    setExistingImages([]); 
+    setNewImages([]); 
+    setFormErrors({}); 
+    setEditingProduct(null); 
+    setShowModal(false);
   };
 
   const handleSubmit = async (e) => {
@@ -100,13 +121,11 @@ const ProductManagement = () => {
       await validationSchema.validate(formData, { abortEarly: false });
       const submitData = new FormData();
       
-      // Append basic fields
       Object.entries(formData).forEach(([key, value]) => {
         if (key === 'specifications') submitData.append(key, JSON.stringify(value));
         else submitData.append(key, value);
       });
 
-      // Append Image instructions for backend
       submitData.append('existingImages', JSON.stringify(existingImages));
       newImages.forEach(file => submitData.append('images', file));
 
@@ -115,87 +134,144 @@ const ProductManagement = () => {
       const { data } = await api[method](url, submitData);
 
       if (data.success) {
-        toast.success(editingProduct ? 'Updated' : 'Created');
+        toast.success(editingProduct ? 'Product Updated' : 'Product Created');
         resetForm();
         fetchProducts();
       }
     } catch (error) {
       if (error.name === 'ValidationError') {
-        const errs = {}; error.inner.forEach(e => errs[e.path] = e.message);
+        const errs = {}; 
+        error.inner.forEach(e => errs[e.path] = e.message);
         setFormErrors(errs);
-      } else toast.error(error.response?.data?.message || 'Error');
-    } finally { setIsSubmitting(false); }
+      } else {
+        toast.error(error.response?.data?.message || 'Error occurred');
+      }
+    } finally { 
+      setIsSubmitting(false); 
+    }
   };
 
   return (
     <div className="p-8 bg-slate-50 min-h-screen">
-      <div className="flex justify-between mb-8">
-        <h1 className="text-3xl font-bold">Inventory</h1>
-        <button onClick={() => setShowModal(true)} className="bg-blue-600 text-white px-6 py-2 rounded-xl flex items-center gap-2"><Plus/> Add Product</button>
+      <div className="flex flex-col md:flex-row justify-between mb-8 gap-4">
+        <div>
+            <h1 className="text-3xl font-bold text-slate-900">Inventory Management</h1>
+            <p className="text-slate-500">{pagination.total} Products Total</p>
+        </div>
+        <button onClick={() => { resetForm(); setShowModal(true); }} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center justify-center gap-2 font-bold shadow-lg transition-transform active:scale-95">
+            <Plus size={20}/> Add New Product
+        </button>
       </div>
 
-      {/* Product Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {products.map(p => (
-          <div key={p._id} className="bg-white p-4 rounded-2xl shadow-sm border">
-            <img src={getImageUrl(p.images[0])} className="w-full h-48 object-cover rounded-xl mb-4" alt="" />
-            <h3 className="font-bold truncate">{p.name}</h3>
-            <p className="text-blue-600 font-bold">LKR {p.price.toLocaleString()}</p>
-            <div className="flex gap-2 mt-4">
-              <button onClick={() => handleEdit(p)} className="flex-1 bg-slate-100 py-2 rounded-lg flex justify-center"><Edit2 size={16}/></button>
-              <button onClick={async () => { if(window.confirm('Delete?')) await api.delete(`/products/${p._id}`); fetchProducts(); }} className="p-2 bg-red-50 text-red-500 rounded-lg"><Trash2 size={16}/></button>
+      {/* Grid */}
+      {loading ? (
+        <div className="flex justify-center py-20"><Loader2 className="animate-spin w-10 h-10 text-blue-600" /></div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {products.map(p => (
+            <div key={p._id} className="bg-white p-4 rounded-2xl shadow-sm border group hover:shadow-md transition-shadow">
+              <div className="aspect-square overflow-hidden rounded-xl bg-slate-100 mb-4">
+                <img 
+                    src={getImageUrl(p.images?.[0])} 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    alt={p.name}
+                    onError={(e) => e.target.src = 'https://placehold.co/400x400?text=Error+Loading'}
+                />
+              </div>
+              <h3 className="font-bold text-slate-800 line-clamp-1">{p.name}</h3>
+              <p className="text-blue-600 font-bold text-lg">LKR {p.price.toLocaleString()}</p>
+              
+              <div className="flex gap-2 mt-4">
+                <button onClick={() => handleEdit(p)} className="flex-1 bg-slate-100 hover:bg-blue-600 hover:text-white py-2 rounded-lg flex justify-center items-center gap-2 transition-colors font-semibold text-slate-700">
+                    <Edit2 size={16}/> Edit
+                </button>
+                <button onClick={async () => { if(window.confirm('Delete this product?')) { await api.delete(`/products/${p._id}`); fetchProducts(); } }} className="p-2 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-colors">
+                    <Trash2 size={18}/>
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-8">
-            <h2 className="text-2xl font-bold mb-6">{editingProduct ? 'Edit' : 'Add'} Product</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input type="text" placeholder="Product Name" className="w-full p-3 border rounded-xl" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-              {formErrors.name && <p className="text-red-500 text-xs">{formErrors.name}</p>}
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[95vh] overflow-y-auto p-8 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
+                <button onClick={resetForm} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X/></button>
+            </div>
 
-              {/* RESTORED DESCRIPTION */}
-              <textarea placeholder="Description" rows="3" className="w-full p-3 border rounded-xl" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
-              {formErrors.description && <p className="text-red-500 text-xs">{formErrors.description}</p>}
-
-              <div className="grid grid-cols-2 gap-4">
-                <select className="p-3 border rounded-xl" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
-                  <option value="">Category</option>
-                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <input type="text" placeholder="Brand" className="p-3 border rounded-xl" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} />
-                <input type="number" placeholder="Price" className="p-3 border rounded-xl" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
-                <input type="number" placeholder="Stock" className="p-3 border rounded-xl" value={formData.quantity} onChange={e => setFormData({...formData, quantity: e.target.value})} />
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-sm font-bold mb-1">Product Name</label>
+                <input type="text" placeholder="e.g. ASUS ROG Strix" className="w-full p-3 border rounded-xl outline-none focus:ring-2 ring-blue-500/20" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                {formErrors.name && <p className="text-red-500 text-xs mt-1 font-semibold">{formErrors.name}</p>}
               </div>
 
-              {/* IMAGE UPLOAD UI */}
-              <div className="grid grid-cols-4 gap-2">
-                {existingImages.map((img, i) => (
-                  <div key={i} className="relative aspect-square">
-                    <img src={getImageUrl(img)} className="w-full h-full object-cover rounded-lg" />
-                    <button type="button" onClick={() => setExistingImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"><X size={12}/></button>
-                  </div>
-                ))}
-                {newImages.map((file, i) => (
-                  <div key={i} className="relative aspect-square border-2 border-blue-500 rounded-lg">
-                    <img src={URL.createObjectURL(file)} className="w-full h-full object-cover rounded-lg" />
-                    <button type="button" onClick={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"><X size={12}/></button>
-                  </div>
-                ))}
-                <label className="aspect-square border-2 border-dashed flex flex-col items-center justify-center rounded-lg cursor-pointer hover:bg-slate-50">
-                  <Upload className="text-slate-400" />
-                  <input type="file" multiple className="hidden" onChange={e => setNewImages([...newImages, ...Array.from(e.target.files)])} />
-                </label>
+              <div>
+                <label className="block text-sm font-bold mb-1">Description</label>
+                <textarea placeholder="Provide detailed specifications..." rows="4" className="w-full p-3 border rounded-xl outline-none focus:ring-2 ring-blue-500/20" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+                {formErrors.description && <p className="text-red-500 text-xs mt-1 font-semibold">{formErrors.description}</p>}
               </div>
 
-              <div className="flex justify-end gap-4 pt-4">
-                <button type="button" onClick={resetForm}>Cancel</button>
-                <button type="submit" disabled={isSubmitting} className="bg-blue-600 text-white px-8 py-2 rounded-xl">
-                  {isSubmitting ? <Loader2 className="animate-spin" /> : 'Save'}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-bold mb-1">Category</label>
+                    <select className="w-full p-3 border rounded-xl outline-none focus:ring-2 ring-blue-500/20" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
+                        <option value="">Select Category</option>
+                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    {formErrors.category && <p className="text-red-500 text-xs mt-1 font-semibold">{formErrors.category}</p>}
+                </div>
+                <div>
+                    <label className="block text-sm font-bold mb-1">Brand</label>
+                    <input type="text" placeholder="Brand Name" className="w-full p-3 border rounded-xl outline-none focus:ring-2 ring-blue-500/20" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} />
+                    {formErrors.brand && <p className="text-red-500 text-xs mt-1 font-semibold">{formErrors.brand}</p>}
+                </div>
+                <div>
+                    <label className="block text-sm font-bold mb-1">Price (LKR)</label>
+                    <input type="number" placeholder="0.00" className="w-full p-3 border rounded-xl outline-none focus:ring-2 ring-blue-500/20" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} />
+                    {formErrors.price && <p className="text-red-500 text-xs mt-1 font-semibold">{formErrors.price}</p>}
+                </div>
+                <div>
+                    <label className="block text-sm font-bold mb-1">Stock Quantity</label>
+                    <input type="number" placeholder="0" className="w-full p-3 border rounded-xl outline-none focus:ring-2 ring-blue-500/20" value={formData.quantity} onChange={e => setFormData({...formData, quantity: e.target.value})} />
+                    {formErrors.quantity && <p className="text-red-500 text-xs mt-1 font-semibold">{formErrors.quantity}</p>}
+                </div>
+              </div>
+
+              {/* IMAGE MANAGER */}
+              <div>
+                <label className="block text-sm font-bold mb-3">Product Images (Max 5)</label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                    {existingImages.map((img, i) => (
+                        <div key={`ex-${i}`} className="relative aspect-square rounded-xl overflow-hidden border group">
+                            <img src={getImageUrl(img)} className="w-full h-full object-cover" alt="" />
+                            <button type="button" onClick={() => setExistingImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"><X size={14}/></button>
+                        </div>
+                    ))}
+                    {newImages.map((file, i) => (
+                        <div key={`new-${i}`} className="relative aspect-square rounded-xl overflow-hidden border-2 border-blue-400 group">
+                            <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="" />
+                            <button type="button" onClick={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-lg"><X size={14}/></button>
+                        </div>
+                    ))}
+                    { (existingImages.length + newImages.length) < 5 && (
+                        <label className="aspect-square border-2 border-dashed border-slate-300 flex flex-col items-center justify-center rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-400 transition-all text-slate-400 hover:text-blue-500">
+                            <Upload size={24}/>
+                            <span className="text-[10px] font-bold mt-1 uppercase">Upload</span>
+                            <input type="file" multiple accept="image/*" className="hidden" onChange={e => setNewImages([...newImages, ...Array.from(e.target.files)])} />
+                        </label>
+                    )}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-4 pt-6 border-t">
+                <button type="button" onClick={resetForm} className="px-6 py-2 font-bold text-slate-500 hover:text-slate-700">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-10 py-2 rounded-xl font-bold flex items-center gap-2 transition-all shadow-md">
+                  {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : 'Save Product'}
                 </button>
               </div>
             </form>
