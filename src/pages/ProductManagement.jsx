@@ -94,8 +94,8 @@ const ProductManagement = () => {
 
   const handleEdit = (product) => {
     setEditingProduct(product);
-    setExistingImages(product.images || []); // Populate existing images
-    setNewImages([]); // Clear any new selections
+    setExistingImages(product.images || []); // Important: sync with DB
+    setNewImages([]); 
     setFormData({
       name: product.name,
       description: product.description,
@@ -142,7 +142,6 @@ const ProductManagement = () => {
       await validationSchema.validate(formData, { abortEarly: false });
       const submitData = new FormData();
       
-      // Append standard fields
       Object.entries(formData).forEach(([key, value]) => {
         if (key === 'specifications') {
           submitData.append(key, JSON.stringify(value));
@@ -151,10 +150,11 @@ const ProductManagement = () => {
         }
       });
 
-      // 1. Send existing images list (so backend knows which to keep/delete)
+      // CRITICAL: Send the list of images that remain after you clicked "X"
+      // Backend must use this to overwrite the old image array
       submitData.append('existingImages', JSON.stringify(existingImages));
       
-      // 2. Send new file uploads
+      // Send new files
       newImages.forEach(img => submitData.append('images', img));
 
       const request = editingProduct 
@@ -324,25 +324,28 @@ const ProductManagement = () => {
                     type="file"
                     multiple
                     accept="image/*"
-                    onChange={(e) => setNewImages(prev => [...prev, ...Array.from(e.target.files)])}
+                    onChange={(e) => {
+                       const files = Array.from(e.target.files);
+                       setNewImages(prev => [...prev, ...files]);
+                       e.target.value = null; // Clear input so same file can be selected again
+                    }}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                   />
                   
-                  {/* PREVIEW CONTAINER: SHOWS BOTH EXISTING AND NEW */}
                   {(existingImages.length > 0 || newImages.length > 0) && (
                     <div className="flex flex-wrap gap-3 p-3 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
                       
-                      {/* Render Existing Images from Server */}
+                      {/* Saved Images */}
                       {existingImages.map((url, index) => (
                         <div key={`existing-${index}`} className="relative w-20 h-20 group">
                           <img 
                             src={url} 
-                            alt="existing" 
+                            alt="" 
                             className="w-full h-full object-cover rounded-xl shadow-sm border border-white" 
                           />
                           <button
                             type="button"
-                            onClick={() => setExistingImages(existingImages.filter((_, i) => i !== index))}
+                            onClick={() => setExistingImages(prev => prev.filter((_, i) => i !== index))}
                             className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
                           >
                             <X className="w-3 h-3" />
@@ -351,17 +354,17 @@ const ProductManagement = () => {
                         </div>
                       ))}
 
-                      {/* Render New File Uploads */}
+                      {/* New Previews */}
                       {newImages.map((file, index) => (
                         <div key={`new-${index}`} className="relative w-20 h-20 group">
                           <img 
                             src={URL.createObjectURL(file)} 
-                            alt="preview" 
+                            alt="" 
                             className="w-full h-full object-cover rounded-xl shadow-sm border-2 border-blue-400" 
                           />
                           <button
                             type="button"
-                            onClick={() => setNewImages(newImages.filter((_, i) => i !== index))}
+                            onClick={() => setNewImages(prev => prev.filter((_, i) => i !== index))}
                             className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
                           >
                             <X className="w-3 h-3" />
