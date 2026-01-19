@@ -47,6 +47,7 @@ const ProductManagement = () => {
 
   const [existingImages, setExistingImages] = useState([]); 
   const [newImages, setNewImages] = useState([]); 
+  const [newImagePreviews, setNewImagePreviews] = useState([]);
   const [formErrors, setFormErrors] = useState({});
 
   const validationSchema = Yup.object().shape({
@@ -90,8 +91,18 @@ const ProductManagement = () => {
 
   const handleEdit = (product) => {
     setEditingProduct(product);
-    setExistingImages(product.images || []);
+    // Ensure we store the raw paths from the database, not full URLs
+    const rawImages = (product.images || []).map(img => {
+      // If it's a full URL, extract just the path
+      if (img.startsWith('http')) {
+        const url = new URL(img);
+        return url.pathname;
+      }
+      return img;
+    });
+    setExistingImages(rawImages);
     setNewImages([]);
+    setNewImagePreviews([]);
     setFormData({
       name: product.name,
       description: product.description || '',
@@ -106,9 +117,12 @@ const ProductManagement = () => {
   };
 
   const resetForm = () => {
+    // Clean up all object URLs before resetting
+    newImagePreviews.forEach(url => URL.revokeObjectURL(url));
     setFormData({ name: '', description: '', category: '', brand: '', price: '', quantity: '', status: 'active', specifications: {} });
     setExistingImages([]); 
     setNewImages([]); 
+    setNewImagePreviews([]);
     setFormErrors({}); 
     setEditingProduct(null); 
     setShowModal(false);
@@ -252,17 +266,55 @@ const ProductManagement = () => {
                             <button type="button" onClick={() => setExistingImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"><X size={14}/></button>
                         </div>
                     ))}
-                    {newImages.map((file, i) => (
-                        <div key={`new-${i}`} className="relative aspect-square rounded-xl overflow-hidden border-2 border-blue-400 group">
-                            <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="" />
-                            <button type="button" onClick={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-lg"><X size={14}/></button>
+                    {newImages.map((file, i) => {
+                      const previewUrl = newImagePreviews[i];
+                      return (
+                        <div key={`new-${i}-${file.name}`} className="relative aspect-square rounded-xl overflow-hidden border-2 border-blue-400 group">
+                          <img src={previewUrl} className="w-full h-full object-cover" alt="" />
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              // Clean up the object URL
+                              if (previewUrl) {
+                                URL.revokeObjectURL(previewUrl);
+                              }
+                              setNewImages(prev => prev.filter((_, idx) => idx !== i));
+                              setNewImagePreviews(prev => prev.filter((_, idx) => idx !== i));
+                            }} 
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-lg"
+                          >
+                            <X size={14}/>
+                          </button>
                         </div>
-                    ))}
+                      );
+                    })}
                     { (existingImages.length + newImages.length) < 5 && (
                         <label className="aspect-square border-2 border-dashed border-slate-300 flex flex-col items-center justify-center rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-400 transition-all text-slate-400 hover:text-blue-500">
                             <Upload size={24}/>
                             <span className="text-[10px] font-bold mt-1 uppercase">Upload</span>
-                            <input type="file" multiple accept="image/*" className="hidden" onChange={e => setNewImages([...newImages, ...Array.from(e.target.files)])} />
+                            <input 
+                              type="file" 
+                              multiple 
+                              accept="image/*" 
+                              className="hidden" 
+                              onChange={e => {
+                                if (e.target.files && e.target.files.length > 0) {
+                                  const files = Array.from(e.target.files);
+                                  // Check total limit
+                                  const totalImages = existingImages.length + newImages.length + files.length;
+                                  if (totalImages > 5) {
+                                    toast.error(`Maximum 5 images allowed. You already have ${existingImages.length + newImages.length} images.`);
+                                    e.target.value = '';
+                                    return;
+                                  }
+                                  const previews = files.map(file => URL.createObjectURL(file));
+                                  setNewImages([...newImages, ...files]);
+                                  setNewImagePreviews([...newImagePreviews, ...previews]);
+                                }
+                                // Reset input to allow selecting the same file again
+                                e.target.value = '';
+                              }} 
+                            />
                         </label>
                     )}
                 </div>
