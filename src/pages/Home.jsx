@@ -15,17 +15,17 @@ const Home = () => {
 
   const heroImages = [
     {
-      url: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?ixlib=rb-4.0.3&auto=format&fit=crop&w=2071&q=80',
+      url: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
       title: 'Premium Computer Parts',
       subtitle: 'Build your dream PC with top-quality components and hardware'
     },
     {
-      url: 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      url: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
       title: 'Latest PC Components',
       subtitle: 'CPUs, GPUs, RAM, Motherboards & More - Everything for your build'
     },
     {
-      url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      url: 'https://images.unsplash.com/photo-1562979314-bee7453e911c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
       title: 'Expert PC Building',
       subtitle: 'Get professional advice and support for your custom PC build'
     }
@@ -108,49 +108,59 @@ const Home = () => {
       <section className="relative h-screen overflow-hidden">
         <div className="absolute inset-0">
           {heroImages.map((img, index) => (
-            <img
+            <div
               key={index}
-              src={img.url}
-              alt={img.title}
-              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
-                index === currentSlide ? 'opacity-100' : 'opacity-0'
+              className={`absolute inset-0 transition-opacity duration-1000 ${
+                index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
               }`}
-            />
+            >
+              <img
+                src={img.url}
+                alt={img.title}
+                className="w-full h-full object-cover animate-zoom-in"
+                style={{ animationDuration: '20s', animationIterationCount: 'infinite' }}
+              />
+            </div>
           ))}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/30" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40 z-10" />
         </div>
         
-        <div className="relative z-10 container mx-auto px-4 h-full flex items-center">
-          <div className="max-w-2xl text-white animate-fade-in-up">
-            <h1 className="text-5xl md:text-7xl font-extrabold mb-6 text-left leading-tight animate-slide-in-left">
-              {heroImages[currentSlide].title}
-            </h1>
-            <p className="text-xl md:text-3xl mb-10 text-left text-gray-200 animate-slide-in-right">
-              {heroImages[currentSlide].subtitle}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 animate-fade-in">
+        <div className="relative z-20 container mx-auto px-4 h-full flex items-center">
+          <div className="max-w-3xl text-white">
+            <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-extrabold mb-6 text-left leading-tight animate-slide-in-left drop-shadow-2xl">
+                {heroImages[currentSlide].title}
+              </h1>
+            </div>
+            <div className="animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+              <p className="text-xl md:text-2xl lg:text-3xl mb-10 text-left text-gray-100 animate-slide-in-right drop-shadow-lg">
+                {heroImages[currentSlide].subtitle}
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
               {user ? (
                 <Link
                   to={user.role === 'admin' ? '/admin/dashboard' : '/shop'}
-                  className="inline-flex items-center px-10 py-5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl text-lg"
+                  className="group inline-flex items-center justify-center px-10 py-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-blue-800 hover:scale-110 hover:shadow-2xl transition-all duration-300 shadow-xl text-lg animate-bounce-in"
                 >
                   Browse Products
-                  <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
                 </Link>
               ) : (
                 <>
                   <Link
                     to="/shop"
-                    className="inline-flex items-center px-10 py-5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl text-lg"
+                    className="group inline-flex items-center justify-center px-10 py-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-blue-800 hover:scale-110 hover:shadow-2xl transition-all duration-300 shadow-xl text-lg animate-bounce-in"
                   >
                     Shop Now
-                    <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
                   </Link>
                   <Link
                     to="/shop"
-                    className="inline-flex items-center px-10 py-5 bg-white/10 backdrop-blur-sm text-white font-bold rounded-xl hover:bg-white/20 hover:scale-105 transition-all duration-300 border-2 border-white/30 text-lg"
+                    className="group inline-flex items-center justify-center px-10 py-5 bg-white/10 backdrop-blur-md text-white font-bold rounded-xl hover:bg-white/20 hover:scale-110 transition-all duration-300 border-2 border-white/30 hover:border-white/50 text-lg animate-fade-in"
                   >
                     Browse Products
+                    <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
                   </Link>
                 </>
               )}
@@ -159,43 +169,55 @@ const Home = () => {
         </div>
 
         {/* Slide Indicators */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex gap-3">
+        <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 z-30 flex gap-3 animate-fade-in">
           {heroImages.map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentSlide(index)}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                index === currentSlide ? 'w-8 bg-white' : 'w-2 bg-white/50 hover:bg-white/75'
+              className={`h-3 rounded-full transition-all duration-300 hover:scale-125 ${
+                index === currentSlide 
+                  ? 'w-10 bg-white shadow-lg' 
+                  : 'w-3 bg-white/50 hover:bg-white/75'
               }`}
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}
         </div>
+
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30 animate-bounce">
+          <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center p-2">
+            <div className="w-1 h-3 bg-white/50 rounded-full animate-pulse"></div>
+          </div>
+        </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-gradient-to-b from-white to-slate-50">
+      <section className="py-24 bg-gradient-to-b from-white via-blue-50/30 to-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl md:text-5xl font-extrabold text-center text-slate-900 mb-4 animate-fade-in">
-            Why Choose IMAX Computer Parts?
-          </h2>
-          <p className="text-center text-slate-600 mb-16 text-lg max-w-2xl mx-auto animate-fade-in">
-            Your one-stop shop for premium computer components and expert PC building support
-          </p>
+          <div className="text-center mb-16 animate-fade-in">
+            <h2 className="text-4xl md:text-6xl font-extrabold text-slate-900 mb-4 animate-slide-in-down">
+              Why Choose IMAX Computer Parts?
+            </h2>
+            <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-blue-600 mx-auto mb-6 animate-scale-in"></div>
+            <p className="text-center text-slate-600 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
+              Your one-stop shop for premium computer components and expert PC building support
+            </p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
               <div 
                 key={index} 
-                className="text-center group hover:transform hover:scale-105 transition-all duration-300 animate-fade-in-up"
-                style={{ animationDelay: `${index * 100}ms` }}
+                className="text-center group hover:transform hover:scale-110 hover:-translate-y-2 transition-all duration-500 animate-fade-in-up bg-white rounded-3xl p-8 shadow-lg hover:shadow-2xl border border-slate-100 hover:border-blue-300"
+                style={{ animationDelay: `${index * 150}ms` }}
               >
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl mb-6 group-hover:from-blue-600 group-hover:to-blue-700 group-hover:rotate-6 transition-all duration-300 shadow-lg group-hover:shadow-xl">
-                  <feature.icon className="w-10 h-10" />
+                <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 text-white rounded-3xl mb-6 group-hover:from-blue-600 group-hover:via-blue-700 group-hover:to-blue-800 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500 shadow-xl group-hover:shadow-2xl animate-float">
+                  <feature.icon className="w-12 h-12 group-hover:scale-110 transition-transform duration-300" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-blue-600 transition-colors">
+                <h3 className="text-xl font-bold text-slate-900 mb-4 group-hover:text-blue-600 transition-colors duration-300">
                   {feature.title}
                 </h3>
-                <p className="text-slate-600 leading-relaxed">
+                <p className="text-slate-600 leading-relaxed text-sm md:text-base">
                   {feature.description}
                 </p>
               </div>

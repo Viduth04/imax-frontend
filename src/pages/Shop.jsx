@@ -35,20 +35,26 @@ const Shop = () => {
 
   // Logic to handle full image pathing
   const getImageUrl = (path) => {
-    if (!path) return 'https://placehold.co/400x400?text=No+Image';
+    if (!path) {
+      return 'https://placehold.co/400x400?text=No+Image';
+    }
     
+    // If already a full URL, return as is
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
     }
     
+    // Normalize the path
     const cleanPath = path.replace(/\\/g, '/');
     const finalPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
     
-    if (BASE_URL) {
-      return `${BASE_URL}${finalPath}`;
-    }
+    // Construct full URL
+    const fullUrl = BASE_URL ? `${BASE_URL}${finalPath}` : finalPath;
     
-    return finalPath;
+    // Debug logging
+    console.log('Image path:', path, '→ Full URL:', fullUrl);
+    
+    return fullUrl;
   };
   
   const [products, setProducts] = useState([]);
@@ -114,6 +120,11 @@ const Shop = () => {
       const { data } = await api.get('/products', { params });
       
       if (data.success) {
+        // Debug: Log products and their images
+        console.log('Fetched products:', data.products.length);
+        data.products.forEach(p => {
+          console.log(`Product: ${p.name}`, 'Images:', p.images);
+        });
         setProducts(data.products);
         setPagination({
           currentPage: data.currentPage,

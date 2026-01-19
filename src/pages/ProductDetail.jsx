@@ -39,20 +39,26 @@ const ProductDetail = () => {
 
   // Logic to handle full image pathing
   const getImageUrl = (path) => {
-    if (!path) return 'https://placehold.co/400x400?text=No+Image';
+    if (!path) {
+      return 'https://placehold.co/400x400?text=No+Image';
+    }
     
+    // If already a full URL, return as is
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
     }
     
+    // Normalize the path
     const cleanPath = path.replace(/\\/g, '/');
     const finalPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
     
-    if (BASE_URL) {
-      return `${BASE_URL}${finalPath}`;
-    }
+    // Construct full URL
+    const fullUrl = BASE_URL ? `${BASE_URL}${finalPath}` : finalPath;
     
-    return finalPath;
+    // Debug logging
+    console.log('ProductDetail - Image path:', path, '→ Full URL:', fullUrl);
+    
+    return fullUrl;
   };
 
   const [product, setProduct] = useState(null);
@@ -73,6 +79,7 @@ const ProductDetail = () => {
       // Use the 'api' instance instead of raw axios
       const { data } = await api.get(`/products/${id}`);
       if (data.success) {
+        console.log('ProductDetail - Fetched product:', data.product.name, 'Images:', data.product.images);
         setProduct(data.product);
       }
     } catch (error) {
