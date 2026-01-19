@@ -94,8 +94,8 @@ const ProductManagement = () => {
 
   const handleEdit = (product) => {
     setEditingProduct(product);
-    setExistingImages(product.images || []); // LOAD EXISTING IMAGES HERE
-    setNewImages([]); // Reset any previous file selections
+    setExistingImages(product.images || []); // Populate existing images
+    setNewImages([]); // Clear any new selections
     setFormData({
       name: product.name,
       description: product.description,
@@ -142,6 +142,7 @@ const ProductManagement = () => {
       await validationSchema.validate(formData, { abortEarly: false });
       const submitData = new FormData();
       
+      // Append standard fields
       Object.entries(formData).forEach(([key, value]) => {
         if (key === 'specifications') {
           submitData.append(key, JSON.stringify(value));
@@ -150,7 +151,7 @@ const ProductManagement = () => {
         }
       });
 
-      // 1. Send existing images (the ones you didn't delete in the UI)
+      // 1. Send existing images list (so backend knows which to keep/delete)
       submitData.append('existingImages', JSON.stringify(existingImages));
       
       // 2. Send new file uploads
@@ -323,7 +324,7 @@ const ProductManagement = () => {
                     type="file"
                     multiple
                     accept="image/*"
-                    onChange={(e) => setNewImages(Array.from(e.target.files))}
+                    onChange={(e) => setNewImages(prev => [...prev, ...Array.from(e.target.files)])}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                   />
                   
