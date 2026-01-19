@@ -7,13 +7,13 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import toast from 'react-hot-toast';
-import api from '../api.js'; // Used this instead of axios
+import api from '../api.js'; 
 import { getImageUrl } from '../utils/imageUtils.js';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { checkAuth } = useAuth(); // Assuming checkAuth is a function or boolean
+  const { checkAuth } = useAuth(); 
   const { addToCart } = useCart();
 
   const [product, setProduct] = useState(null);
@@ -31,13 +31,12 @@ const ProductDetail = () => {
   const fetchProduct = async () => {
     try {
       setLoading(true);
-      // Use the 'api' instance instead of raw axios
       const { data } = await api.get(`/products/${id}`);
       if (data.success) {
-        console.log('ProductDetail - Fetched product:', data.product.name, 'Images:', data.product.images);
         setProduct(data.product);
       }
     } catch (error) {
+      console.error('Fetch error:', error);
       toast.error('Failed to fetch product');
       navigate('/shop');
     } finally {
@@ -46,8 +45,10 @@ const ProductDetail = () => {
   };
 
   const handleAddToCart = async () => {
-    // Note: Ensure checkAuth logic matches your AuthContext (e.g., if it's a function)
-    if (!checkAuth) {
+    // If checkAuth is a function, call it. If it's a boolean/object, check truthiness.
+    const isAuthenticated = typeof checkAuth === 'function' ? checkAuth() : checkAuth;
+
+    if (!isAuthenticated) {
       toast.error('Please login to add items to cart');
       navigate('/login');
       return;
@@ -101,31 +102,38 @@ const ProductDetail = () => {
           Back to Shop
         </button>
 
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 p-6 lg:p-12">
             
             {/* Left: Gallery */}
-            <div className="space-y-4 animate-slide-in-left">
+            <div className="space-y-4">
               <div className="relative aspect-square bg-slate-50 rounded-2xl overflow-hidden border border-slate-100">
                 <img
                   src={getImageUrl(product.images?.[selectedImage])}
                   alt={product.name}
-                  className="w-full h-full object-contain p-4"
+                  className="w-full h-full object-contain p-4 transition-opacity duration-300"
                   onError={(e) => {
-                    e.target.src = 'https://placehold.co/400x400?text=No+Image';
+                    e.target.onerror = null; 
+                    e.target.src = 'https://placehold.co/600x600?text=Image+Not+Available';
                   }}
                 />
                 
-                {product.images.length > 1 && (
+                {product.images && product.images.length > 1 && (
                   <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none">
                     <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedImage(prev => (prev - 1 + product.images.length) % product.images.length); }}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setSelectedImage(prev => (prev - 1 + product.images.length) % product.images.length); 
+                      }}
                       className="p-2 bg-white/90 hover:bg-white rounded-full shadow-md transition-all pointer-events-auto"
                     >
                       <ChevronLeft className="w-5 h-5 text-slate-700" />
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedImage(prev => (prev + 1) % product.images.length); }}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setSelectedImage(prev => (prev + 1) % product.images.length); 
+                      }}
                       className="p-2 bg-white/90 hover:bg-white rounded-full shadow-md transition-all pointer-events-auto"
                     >
                       <ChevronRight className="w-5 h-5 text-slate-700" />
@@ -142,6 +150,7 @@ const ProductDetail = () => {
                 )}
               </div>
 
+              {/* Thumbnails */}
               {product.images && product.images.length > 1 && (
                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                   {product.images.map((img, idx) => (
@@ -155,7 +164,7 @@ const ProductDetail = () => {
                       <img 
                         src={getImageUrl(img)} 
                         className="w-full h-full object-cover" 
-                        alt="thumbnail"
+                        alt={`thumbnail ${idx}`}
                         onError={(e) => {
                           e.target.src = 'https://placehold.co/80x80?text=Image';
                         }}
@@ -167,7 +176,7 @@ const ProductDetail = () => {
             </div>
 
             {/* Right: Details */}
-            <div className="flex flex-col animate-slide-in-right">
+            <div className="flex flex-col">
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">

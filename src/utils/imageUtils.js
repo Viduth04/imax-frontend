@@ -6,17 +6,17 @@ import api from '../api.js';
 export const getBaseUrl = () => {
   const apiBase = api.defaults.baseURL || '';
   
-  // If VITE_BACKEND_URL is set, extract the base URL
+  // If api instance has a baseURL (e.g., https://site.onrender.com/api), extract the root
   if (apiBase && apiBase.includes('/api')) {
     return apiBase.split('/api')[0];
   }
   
-  // For local development, use localhost:10000 (backend port)
+  // Fallback for local development
   if (import.meta.env.DEV) {
     return 'http://localhost:10000';
   }
   
-  // For production, try to extract from env or use empty string
+  // Fallback for production environment variables
   const envUrl = import.meta.env.VITE_BACKEND_URL?.trim().replace(/\/+$/, '');
   if (envUrl) {
     return envUrl.split('/api')[0] || envUrl;
@@ -27,50 +27,39 @@ export const getBaseUrl = () => {
 
 /**
  * Construct full image URL from a path
- * @param {string} path - Image path from database (e.g., "/uploads/products/filename.jpg")
- * @returns {string} Full URL to the image
  */
 export const getImageUrl = (path) => {
   if (!path) {
-    console.warn('⚠️ No image path provided');
     return 'https://placehold.co/400x400?text=No+Image';
   }
   
-  // If already a full URL, return as is
+  // If already a full URL (like an external link), return as is
   if (path.startsWith('http://') || path.startsWith('https://')) {
     return path;
   }
   
-  // Normalize the path - ensure it starts with /uploads
+  // 1. Normalize slashes for Windows/Linux compatibility
   let cleanPath = path.replace(/\\/g, '/');
   
-  // Remove any double slashes
-  cleanPath = cleanPath.replace(/\/+/g, '/');
+  // 2. CRITICAL: Remove "public/" from the start if it exists
+  // Because the server serves the INSIDE of the public folder, not the folder itself
+  if (cleanPath.startsWith('public/')) {
+    cleanPath = cleanPath.replace('public/', '');
+  } else if (cleanPath.startsWith('/public/')) {
+    cleanPath = cleanPath.replace('/public/', '/');
+  }
   
-  // Ensure it starts with /
+  // 3. Ensure the path starts with a single /
   if (!cleanPath.startsWith('/')) {
     cleanPath = '/' + cleanPath;
   }
   
-  // Ensure it's the uploads path (backend saves as /uploads/products/filename)
-  if (!cleanPath.startsWith('/uploads')) {
-    // If path doesn't start with /uploads, prepend it
-    cleanPath = '/uploads' + (cleanPath.startsWith('/') ? '' : '/') + cleanPath.replace(/^\/+/, '');
-  }
-  
-  // Construct full URL
-  const base = getBaseUrl() || 'http://localhost:10000';
+  // 4. Construct the full URL
+  const base = getBaseUrl();
   const fullUrl = `${base}${cleanPath}`;
   
-  // Debug logging - log all calls for debugging
-  console.log('🖼️ getImageUrl:', {
-    originalPath: path,
-    cleanedPath: cleanPath,
-    baseUrl: base,
-    fullUrl: fullUrl,
-    apiBase: typeof window !== 'undefined' ? (window.location?.origin || '') : '',
-    env: import.meta.env.DEV ? 'dev' : 'prod'
-  });
+  // Helpful log for debugging in the browser console
+  console.log('Image URL Debug:', { original: path, final: fullUrl });
   
   return fullUrl;
 };
