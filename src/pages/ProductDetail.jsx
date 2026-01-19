@@ -34,6 +34,8 @@ const ProductDetail = () => {
       const { data } = await api.get(`/products/${id}`);
       if (data.success) {
         setProduct(data.product);
+        // Reset selected image to first one on new product load
+        setSelectedImage(0); 
       }
     } catch (error) {
       console.error('Fetch error:', error);
@@ -45,7 +47,6 @@ const ProductDetail = () => {
   };
 
   const handleAddToCart = async () => {
-    // If checkAuth is a function, call it. If it's a boolean/object, check truthiness.
     const isAuthenticated = typeof checkAuth === 'function' ? checkAuth() : checkAuth;
 
     if (!isAuthenticated) {
@@ -73,7 +74,7 @@ const ProductDetail = () => {
 
   const handleQuantityChange = (delta) => {
     const newQuantity = quantity + delta;
-    if (newQuantity >= 1 && newQuantity <= product.quantity) {
+    if (newQuantity >= 1 && product && newQuantity <= product.quantity) {
       setQuantity(newQuantity);
     }
   };
@@ -121,6 +122,7 @@ const ProductDetail = () => {
                 {product.images && product.images.length > 1 && (
                   <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none">
                     <button
+                      type="button"
                       onClick={(e) => { 
                         e.stopPropagation(); 
                         setSelectedImage(prev => (prev - 1 + product.images.length) % product.images.length); 
@@ -130,6 +132,7 @@ const ProductDetail = () => {
                       <ChevronLeft className="w-5 h-5 text-slate-700" />
                     </button>
                     <button
+                      type="button"
                       onClick={(e) => { 
                         e.stopPropagation(); 
                         setSelectedImage(prev => (prev + 1) % product.images.length); 
@@ -156,6 +159,7 @@ const ProductDetail = () => {
                   {product.images.map((img, idx) => (
                     <button
                       key={idx}
+                      type="button"
                       onClick={() => setSelectedImage(idx)}
                       className={`relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
                         selectedImage === idx ? 'border-blue-500 scale-95' : 'border-slate-200 opacity-60 hover:opacity-100'
@@ -235,6 +239,7 @@ const ProductDetail = () => {
                   <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex items-center bg-slate-100 rounded-2xl p-1">
                       <button
+                        type="button"
                         onClick={() => handleQuantityChange(-1)}
                         disabled={quantity <= 1}
                         className="p-3 text-slate-600 hover:bg-white hover:shadow-sm rounded-xl disabled:opacity-30 transition-all"
@@ -245,6 +250,7 @@ const ProductDetail = () => {
                         {quantity}
                       </span>
                       <button
+                        type="button"
                         onClick={() => handleQuantityChange(1)}
                         disabled={quantity >= product.quantity}
                         className="p-3 text-slate-600 hover:bg-white hover:shadow-sm rounded-xl disabled:opacity-30 transition-all"
@@ -254,6 +260,7 @@ const ProductDetail = () => {
                     </div>
 
                     <button
+                      type="button"
                       onClick={handleAddToCart}
                       disabled={adding}
                       className="flex-1 flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-200 transition-all font-bold text-lg disabled:opacity-70"

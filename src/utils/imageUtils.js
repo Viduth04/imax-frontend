@@ -28,38 +28,20 @@ export const getBaseUrl = () => {
 /**
  * Construct full image URL from a path
  */
-export const getImageUrl = (path) => {
-  if (!path) {
-    return 'https://placehold.co/400x400?text=No+Image';
-  }
+// src/utils/imageUtils.js
+export const getImageUrl = (imagePath) => {
+  if (!imagePath) return 'https://placehold.co/600x600?text=No+Image';
   
-  // If already a full URL (like an external link), return as is
-  if (path.startsWith('http://') || path.startsWith('https://')) {
-    return path;
-  }
+  // If the path is already a full URL (like a placeholder or cloud storage), return it
+  if (imagePath.startsWith('http')) return imagePath;
+
+  // 1. Replace Windows-style backslashes with forward slashes
+  // 2. Ensure it starts with /uploads/
+  const sanitizedPath = imagePath.replace(/\\/g, '/');
+  const cleanPath = sanitizedPath.startsWith('/') ? sanitizedPath : `/${sanitizedPath}`;
   
-  // 1. Normalize slashes for Windows/Linux compatibility
-  let cleanPath = path.replace(/\\/g, '/');
+  // Set your backend URL (make sure this matches your Express server port)
+  const backendUrl = 'http://localhost:5000'; 
   
-  // 2. CRITICAL: Remove "public/" from the start if it exists
-  // Because the server serves the INSIDE of the public folder, not the folder itself
-  if (cleanPath.startsWith('public/')) {
-    cleanPath = cleanPath.replace('public/', '');
-  } else if (cleanPath.startsWith('/public/')) {
-    cleanPath = cleanPath.replace('/public/', '/');
-  }
-  
-  // 3. Ensure the path starts with a single /
-  if (!cleanPath.startsWith('/')) {
-    cleanPath = '/' + cleanPath;
-  }
-  
-  // 4. Construct the full URL
-  const base = getBaseUrl();
-  const fullUrl = `${base}${cleanPath}`;
-  
-  // Helpful log for debugging in the browser console
-  console.log('Image URL Debug:', { original: path, final: fullUrl });
-  
-  return fullUrl;
+  return `${backendUrl}${cleanPath}`;
 };
