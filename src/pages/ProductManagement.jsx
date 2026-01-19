@@ -9,7 +9,13 @@ import * as Yup from 'yup';
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
+  // Added standard computer shop categories as defaults
+  const [categories, setCategories] = useState([
+    "Laptops", "Desktops", "Processors (CPU)", "Motherboards", 
+    "RAM (Memory)", "Graphics Cards (GPU)", "Storage (SSD/HDD)", 
+    "Power Supplies (PSU)", "Monitors", "Casing", "Cooling Solutions", 
+    "Keyboards & Mice", "Accessories"
+  ]);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -30,7 +36,6 @@ const ProductManagement = () => {
   const [images, setImages] = useState([]);
   const [formErrors, setFormErrors] = useState({});
   
-  // Validation Logic (using Yup as you did)
   const validationSchema = Yup.object().shape({
     name: Yup.string().required('Required').min(3).max(200),
     description: Yup.string().required('Required').min(10),
@@ -41,12 +46,10 @@ const ProductManagement = () => {
     status: Yup.string().oneOf(['active', 'inactive']),
   });
 
-  // Debounced fetch logic
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       fetchProducts();
-    }, 500); // Wait 500ms after last keystroke
-
+    }, 500);
     return () => clearTimeout(delayDebounceFn);
   }, [searchQuery, filters, pagination.currentPage]);
 
@@ -80,7 +83,10 @@ const ProductManagement = () => {
   const fetchCategories = async () => {
     try {
       const { data } = await api.get('/products/categories');
-      if (data.success) setCategories(data.categories);
+      // Merge API categories with our defaults to ensure a rich list
+      if (data.success) {
+        setCategories(prev => Array.from(new Set([...prev, ...data.categories])));
+      }
     } catch (e) { console.error("Category fetch failed"); }
   };
 
@@ -114,14 +120,8 @@ const ProductManagement = () => {
 
   const resetForm = () => {
     setFormData({
-      name: '',
-      description: '',
-      category: '',
-      brand: '',
-      price: '',
-      quantity: '',
-      status: 'active',
-      specifications: {}
+      name: '', description: '', category: '', brand: '',
+      price: '', quantity: '', status: 'active', specifications: {}
     });
     setImages([]);
     setFormErrors({});
@@ -135,7 +135,6 @@ const ProductManagement = () => {
 
     try {
       await validationSchema.validate(formData, { abortEarly: false });
-      
       const submitData = new FormData();
       Object.entries(formData).forEach(([key, value]) => {
         if (key === 'specifications') {
@@ -173,7 +172,7 @@ const ProductManagement = () => {
 
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
-      {/* Dashboard Stats / Header */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Inventory</h1>
@@ -201,7 +200,6 @@ const ProductManagement = () => {
           />
         </div>
         
-        {/* Render categories dynamically from state */}
         <select 
           className="px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 outline-none"
           onChange={(e) => setFilters({...filters, category: e.target.value})}
@@ -211,7 +209,7 @@ const ProductManagement = () => {
         </select>
       </div>
 
-      {/* Product Table / Grid Area */}
+      {/* Product Grid */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
@@ -221,7 +219,6 @@ const ProductManagement = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {products.map(product => (
             <div key={product._id} className="group bg-white rounded-3xl border border-slate-200 p-4 hover:shadow-xl transition-all duration-300">
-               {/* Image Container */}
                <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 mb-4">
                   <img src={product.images[0]} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute top-3 left-3 flex gap-2">
@@ -231,7 +228,6 @@ const ProductManagement = () => {
                   </div>
                </div>
 
-               {/* Content */}
                <div className="px-2">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-bold text-slate-800 text-lg line-clamp-1">{product.name}</h3>
@@ -243,16 +239,10 @@ const ProductManagement = () => {
                   </div>
 
                   <div className="flex gap-2">
-                    <button 
-                      onClick={() => handleEdit(product)}
-                      className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-50 text-slate-700 rounded-xl hover:bg-blue-50 hover:text-blue-600 font-bold transition-colors"
-                    >
+                    <button onClick={() => handleEdit(product)} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-50 text-slate-700 rounded-xl hover:bg-blue-50 hover:text-blue-600 font-bold transition-colors">
                       <Edit2 className="w-4 h-4" /> Edit
                     </button>
-                    <button 
-                      onClick={() => handleDelete(product._id)}
-                      className="px-4 py-2.5 bg-slate-50 text-red-500 rounded-xl hover:bg-red-50 transition-colors"
-                    >
+                    <button onClick={() => handleDelete(product._id)} className="px-4 py-2.5 bg-slate-50 text-red-500 rounded-xl hover:bg-red-50 transition-colors">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
@@ -262,94 +252,49 @@ const ProductManagement = () => {
         </div>
       )}
 
-      {/* Add/Edit Product Modal */}
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-slate-900">
-                {editingProduct ? 'Edit Product' : 'Add New Product'}
-              </h2>
-              <button
-                onClick={resetForm}
-                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-              >
-                <X className="w-6 h-6 text-slate-600" />
-              </button>
+              <h2 className="text-2xl font-bold text-slate-900">{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
+              <button onClick={resetForm} className="p-2 hover:bg-slate-100 rounded-lg transition-colors"><X className="w-6 h-6 text-slate-600" /></button>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Product Name *</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
+                  <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500" required />
                   {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Category *</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({...formData, category: e.target.value})}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
+                  <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500" required>
                     <option value="">Select Category</option>
                     {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
-                  {formErrors.category && <p className="text-red-500 text-xs mt-1">{formErrors.category}</p>}
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Brand *</label>
-                  <input
-                    type="text"
-                    value={formData.brand}
-                    onChange={(e) => setFormData({...formData, brand: e.target.value})}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                  {formErrors.brand && <p className="text-red-500 text-xs mt-1">{formErrors.brand}</p>}
+                  <input type="text" value={formData.brand} onChange={(e) => setFormData({...formData, brand: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500" required />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Price (LKR) *</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) => setFormData({...formData, price: e.target.value})}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                  {formErrors.price && <p className="text-red-500 text-xs mt-1">{formErrors.price}</p>}
+                  <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500" required />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Quantity *</label>
-                  <input
-                    type="number"
-                    value={formData.quantity}
-                    onChange={(e) => setFormData({...formData, quantity: e.target.value})}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                  {formErrors.quantity && <p className="text-red-500 text-xs mt-1">{formErrors.quantity}</p>}
+                  <input type="number" value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500" required />
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Status *</label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({...formData, status: e.target.value})}
-                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
+                  <select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500">
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                   </select>
@@ -358,48 +303,49 @@ const ProductManagement = () => {
 
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Description *</label>
-                <textarea
-                  rows="4"
-                  value={formData.description}
-                  onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  required
-                />
-                {formErrors.description && <p className="text-red-500 text-xs mt-1">{formErrors.description}</p>}
+                <textarea rows="4" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 resize-none" required />
               </div>
 
+              {/* IMAGE UPLOAD & PREVIEW SECTION */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Product Images</label>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={(e) => setImages(Array.from(e.target.files))}
-                  className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <div className="space-y-4">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={(e) => setImages(Array.from(e.target.files))}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500"
+                  />
+                  
+                  {/* PREVIEW CONTAINER */}
+                  {images.length > 0 && (
+                    <div className="flex flex-wrap gap-3 p-3 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                      {images.map((file, index) => (
+                        <div key={index} className="relative w-20 h-20 group">
+                          <img 
+                            src={URL.createObjectURL(file)} 
+                            alt="preview" 
+                            className="w-full h-full object-cover rounded-xl shadow-sm border border-white" 
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setImages(images.filter((_, i) => i !== index))}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end gap-4 pt-4 border-t">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="px-6 py-3 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors font-semibold flex items-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    editingProduct ? 'Update Product' : 'Create Product'
-                  )}
+                <button type="button" onClick={resetForm} className="px-6 py-3 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 font-semibold">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 font-semibold flex items-center gap-2">
+                  {isSubmitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Saving...</> : (editingProduct ? 'Update Product' : 'Create Product')}
                 </button>
               </div>
             </form>
