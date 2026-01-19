@@ -5,14 +5,9 @@ import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import toast from "react-hot-toast";
 import * as Yup from "yup";
-import axios from "axios";
 import PaymentPopup from "../components/PaymentPopup";
 import PaymentSuccessModal from "../components/PaymentSuccessModal";
-
-const api = axios.create({
-  baseURL: "/api",
-  withCredentials: true,
-});
+import api from "../api";
 
 /* Validation Constants */
 const LETTERS_ONLY_RE = /^[\p{L}\s]+$/u;

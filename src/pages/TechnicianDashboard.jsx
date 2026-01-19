@@ -44,7 +44,7 @@ const TechnicianDashboard = () => {
   const fetchAppointments = async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get('/technicians/me/appointments');
+      const { data } = await api.get('/technicians/me/appointments');
       if (data.success) {
         setAppointments(data.appointments);
         calculateStats(data.appointments);
@@ -67,7 +67,7 @@ const TechnicianDashboard = () => {
 
   const checkDeletionRequest = async () => {
     try {
-      const { data } = await axios.get('/deletion-requests/me');
+      const { data } = await api.get('/deletion-requests/me');
       if (data.success && data.deletionRequest) {
         setDeletionRequest(data.deletionRequest);
       }
@@ -78,7 +78,7 @@ const TechnicianDashboard = () => {
 
   const handleUpdateStatus = async (appointmentId, status) => {
     try {
-      const { data } = await axios.put(`/technicians/appointments/${appointmentId}/status`, { status });
+      const { data } = await api.put(`/technicians/appointments/${appointmentId}/status`, { status });
       if (data.success) {
         toast.success('Appointment status updated');
         fetchAppointments();
@@ -92,7 +92,7 @@ const TechnicianDashboard = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await axios.put(`/technicians/${user._id}`, profileData);
+      const { data } = await api.put(`/technicians/${user._id}`, profileData);
       if (data.success) {
         toast.success('Profile updated successfully');
       }
@@ -118,7 +118,7 @@ const TechnicianDashboard = () => {
 
     setLoading(true);
     try {
-      const { data } = await axios.put('/technicians/me/password', {
+      const { data } = await api.put('/technicians/me/password', {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword
       });
@@ -141,7 +141,7 @@ const TechnicianDashboard = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await axios.post('/deletion-requests', { reason: deletionReason });
+      const { data } = await api.post('/deletion-requests', { reason: deletionReason });
       if (data.success) {
         toast.success('Deletion request submitted successfully');
         setShowDeletionModal(false);
@@ -160,7 +160,7 @@ const TechnicianDashboard = () => {
 
     setLoading(true);
     try {
-      const { data } = await axios.delete('/deletion-requests/me/cancel');
+      const { data } = await api.delete('/deletion-requests/me/cancel');
       if (data.success) {
         toast.success('Deletion request cancelled');
         setDeletionRequest(null);

@@ -27,7 +27,7 @@ const PaymentPopup = ({
     
     try {
       // Create PaymentIntent
-      const intentRes = await api.post('/api/payments/create-intent', {
+      const intentRes = await api.post('/payments/create-intent', {
         orderId: orderData._id,
       });
 
@@ -48,7 +48,7 @@ const PaymentPopup = ({
       }
 
       // Confirm payment on backend
-      const confirmRes = await api.post('/api/payments/confirm', {
+      const confirmRes = await api.post('/payments/confirm', {
         orderId: orderData._id,
         paymentIntentId: paymentIntent.id,
       });
