@@ -135,6 +135,12 @@ body {
 .animate-fade-in-up {
   animation: fade-in-up 0.8s ease-out forwards;
   opacity: 0;
+  animation-fill-mode: forwards !important;
+}
+
+/* Ensure animations are visible */
+[class*="animate-"] {
+  will-change: transform, opacity;
 }
 
 .animate-fade-in-down {

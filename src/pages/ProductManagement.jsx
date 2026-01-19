@@ -32,24 +32,46 @@ const ProductManagement = () => {
 
   // Logic to handle full image pathing
   const getImageUrl = (path) => {
-    if (!path) return 'https://placehold.co/400x400?text=No+Image';
+    if (!path) {
+      console.warn('⚠️ ProductManagement: No image path provided');
+      return 'https://placehold.co/400x400?text=No+Image';
+    }
     
     // If already a full URL, return as is
     if (path.startsWith('http://') || path.startsWith('https://')) {
       return path;
     }
     
-    // Normalize the path
-    const cleanPath = path.replace(/\\/g, '/');
-    const finalPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
-    
-    // Construct full URL
-    if (BASE_URL) {
-      return `${BASE_URL}${finalPath}`;
+    // Normalize the path - ensure it starts with /uploads
+    let cleanPath = path.replace(/\\/g, '/');
+    if (!cleanPath.startsWith('/')) {
+      cleanPath = '/' + cleanPath;
     }
     
-    // Fallback: return path as is (relative)
-    return finalPath;
+    // Ensure it's the uploads path
+    if (!cleanPath.startsWith('/uploads')) {
+      cleanPath = '/uploads' + (cleanPath.startsWith('/') ? '' : '/') + cleanPath.replace(/^\/+/, '');
+    }
+    
+    // Construct full URL
+    const base = BASE_URL || 'http://localhost:10000';
+    const fullUrl = `${base}${cleanPath}`;
+    
+    // Debug logging
+    if (!getImageUrl.loggedPaths) {
+      getImageUrl.loggedPaths = new Set();
+    }
+    if (!getImageUrl.loggedPaths.has(path)) {
+      getImageUrl.loggedPaths.add(path);
+      console.log('🖼️ ProductManagement Image URL:', {
+        originalPath: path,
+        cleanedPath: cleanPath,
+        baseUrl: base,
+        fullUrl: fullUrl
+      });
+    }
+    
+    return fullUrl;
   };
 
   const [products, setProducts] = useState([]);
