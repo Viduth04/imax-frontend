@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useFormik } from 'formik';
 import { supportTicketSchema } from '../../utils/validationSchemas';
 import { Send, AlertCircle, Monitor, Cpu, HelpCircle, AlertTriangle, CreditCard } from 'lucide-react';
-import api from '../api'; // Import your configured axios instance
+// Adjust the number of dots based on your folder depth
+import api from '../../api';
 import toast from 'react-hot-toast';
 
 const SupportTicketForm = ({ onSuccess }) => {
