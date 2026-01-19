@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../api'; // Use the configured api instance
+import api from '../../api.js'; // Use the configured api instance
 import toast from 'react-hot-toast';
 import FeedbackForm from './FeedbackForm';
 
