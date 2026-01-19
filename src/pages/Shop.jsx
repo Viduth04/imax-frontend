@@ -36,6 +36,7 @@ const Shop = () => {
   // Logic to handle full image pathing
   const getImageUrl = (path) => {
     if (!path) {
+      console.warn('⚠️ No image path provided');
       return 'https://placehold.co/400x400?text=No+Image';
     }
     
@@ -44,15 +45,35 @@ const Shop = () => {
       return path;
     }
     
-    // Normalize the path
-    const cleanPath = path.replace(/\\/g, '/');
-    const finalPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+    // Normalize the path - ensure it starts with /uploads
+    let cleanPath = path.replace(/\\/g, '/');
+    if (!cleanPath.startsWith('/')) {
+      cleanPath = '/' + cleanPath;
+    }
+    
+    // Ensure it's the uploads path (backend saves as /uploads/products/filename)
+    if (!cleanPath.startsWith('/uploads')) {
+      // If path doesn't start with /uploads, assume it's relative to uploads
+      cleanPath = '/uploads' + (cleanPath.startsWith('/') ? '' : '/') + cleanPath.replace(/^\/+/, '');
+    }
     
     // Construct full URL
-    const fullUrl = BASE_URL ? `${BASE_URL}${finalPath}` : finalPath;
+    const base = BASE_URL || 'http://localhost:10000';
+    const fullUrl = `${base}${cleanPath}`;
     
-    // Debug logging
-    console.log('Image path:', path, '→ Full URL:', fullUrl);
+    // Debug logging - only log once per unique path
+    if (!getImageUrl.loggedPaths) {
+      getImageUrl.loggedPaths = new Set();
+    }
+    if (!getImageUrl.loggedPaths.has(path)) {
+      getImageUrl.loggedPaths.add(path);
+      console.log('🖼️ Image URL Construction:', {
+        originalPath: path,
+        cleanedPath: cleanPath,
+        baseUrl: base,
+        fullUrl: fullUrl
+      });
+    }
     
     return fullUrl;
   };
@@ -447,7 +468,12 @@ const Shop = () => {
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         onError={(e) => {
+                          console.error('Failed to load image:', getImageUrl(product.images?.[0]));
+                          e.target.onerror = null; // Prevent infinite loop
                           e.target.src = 'https://placehold.co/400x400?text=No+Image';
+                        }}
+                        onLoad={() => {
+                          console.log('Successfully loaded image:', getImageUrl(product.images?.[0]));
                         }}
                       />
                       {product.featured && (

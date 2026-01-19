@@ -5,9 +5,6 @@ import {
   Settings, Laptop, Wifi, Package, Star, MapPin, Phone, Mail
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import Img1 from '../assets/image1.jpg'
-import Img2 from '../assets/image2.jpg'
-import Img3 from '../assets/image3.jpg'
 
 const Home = () => {
   const { user } = useAuth();
@@ -15,17 +12,17 @@ const Home = () => {
 
   const heroImages = [
     {
-      url: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      url: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80&t=' + Date.now(),
       title: 'Premium Computer Parts',
       subtitle: 'Build your dream PC with top-quality components and hardware'
     },
     {
-      url: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      url: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80&t=' + Date.now(),
       title: 'Latest PC Components',
       subtitle: 'CPUs, GPUs, RAM, Motherboards & More - Everything for your build'
     },
     {
-      url: 'https://images.unsplash.com/photo-1562979314-bee7453e911c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      url: 'https://images.unsplash.com/photo-1562979314-bee7453e911c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80&t=' + Date.now(),
       title: 'Expert PC Building',
       subtitle: 'Get professional advice and support for your custom PC build'
     }
