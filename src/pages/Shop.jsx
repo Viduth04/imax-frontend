@@ -76,9 +76,18 @@ const Shop = () => {
       
       if (data.success) {
         // Debug: Log products and their images
-        console.log('Fetched products:', data.products.length);
+        console.log('📦 Shop - Fetched products:', data.products.length);
         data.products.forEach(p => {
-          console.log(`Product: ${p.name}`, 'Images:', p.images);
+          if (p.images && p.images.length > 0) {
+            const imageUrl = getImageUrl(p.images[0]);
+            console.log(`  ✅ Product "${p.name}":`, {
+              rawPath: p.images[0],
+              fullUrl: imageUrl,
+              allImages: p.images
+            });
+          } else {
+            console.warn(`  ⚠️ Product "${p.name}": No images`);
+          }
         });
         setProducts(data.products);
         setPagination({
@@ -401,13 +410,27 @@ const Shop = () => {
                         src={getImageUrl(product.images?.[0])}
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        loading="lazy"
                         onError={(e) => {
-                          console.error('Failed to load image:', getImageUrl(product.images?.[0]));
+                          const failedUrl = getImageUrl(product.images?.[0]);
+                          console.error('❌ Shop - Failed to load image:', {
+                            productId: product._id,
+                            productName: product.name,
+                            imagePath: product.images?.[0],
+                            allImages: product.images,
+                            constructedUrl: failedUrl,
+                            apiBaseUrl: api.defaults.baseURL
+                          });
+                          // Try direct URL test
+                          console.log('🔍 Try accessing image directly:', failedUrl);
                           e.target.onerror = null; // Prevent infinite loop
                           e.target.src = 'https://placehold.co/400x400?text=No+Image';
                         }}
                         onLoad={() => {
-                          console.log('Successfully loaded image:', getImageUrl(product.images?.[0]));
+                          console.log('✅ Shop - Successfully loaded image:', {
+                            product: product.name,
+                            url: getImageUrl(product.images?.[0])
+                          });
                         }}
                       />
                       {product.featured && (

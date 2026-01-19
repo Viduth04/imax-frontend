@@ -43,12 +43,18 @@ export const getImageUrl = (path) => {
   
   // Normalize the path - ensure it starts with /uploads
   let cleanPath = path.replace(/\\/g, '/');
+  
+  // Remove any double slashes
+  cleanPath = cleanPath.replace(/\/+/g, '/');
+  
+  // Ensure it starts with /
   if (!cleanPath.startsWith('/')) {
     cleanPath = '/' + cleanPath;
   }
   
-  // Ensure it's the uploads path
+  // Ensure it's the uploads path (backend saves as /uploads/products/filename)
   if (!cleanPath.startsWith('/uploads')) {
+    // If path doesn't start with /uploads, prepend it
     cleanPath = '/uploads' + (cleanPath.startsWith('/') ? '' : '/') + cleanPath.replace(/^\/+/, '');
   }
   
@@ -56,19 +62,15 @@ export const getImageUrl = (path) => {
   const base = getBaseUrl() || 'http://localhost:10000';
   const fullUrl = `${base}${cleanPath}`;
   
-  // Debug logging - only log once per unique path
-  if (!getImageUrl.loggedPaths) {
-    getImageUrl.loggedPaths = new Set();
-  }
-  if (!getImageUrl.loggedPaths.has(path)) {
-    getImageUrl.loggedPaths.add(path);
-    console.log('🖼️ Image URL:', {
-      originalPath: path,
-      cleanedPath: cleanPath,
-      baseUrl: base,
-      fullUrl: fullUrl
-    });
-  }
+  // Debug logging - log all calls for debugging
+  console.log('🖼️ getImageUrl:', {
+    originalPath: path,
+    cleanedPath: cleanPath,
+    baseUrl: base,
+    fullUrl: fullUrl,
+    apiBase: typeof window !== 'undefined' ? (window.location?.origin || '') : '',
+    env: import.meta.env.DEV ? 'dev' : 'prod'
+  });
   
   return fullUrl;
 };
