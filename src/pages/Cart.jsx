@@ -3,35 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Trash2, Plus, Minus, ArrowLeft, ArrowRight, ShoppingBag, Info } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '../utils/imageUtils.js';
 
 const Cart = () => {
   const navigate = useNavigate();
   const { cart, updateCartItem, removeFromCart, clearCart, loading } = useCart();
 
-  // Logic to handle full image pathing
-  const getImageUrl = (path) => {
-    if (!path) return 'https://placehold.co/400x400?text=No+Image';
-    
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
-    
-    const cleanPath = path.replace(/\\/g, '/');
-    const finalPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
-    
-    // Use relative path or construct with base URL if available
-    if (import.meta.env.DEV) {
-      return `http://localhost:10000${finalPath}`;
-    }
-    
-    const envUrl = import.meta.env.VITE_BACKEND_URL?.trim().replace(/\/+$/, '');
-    if (envUrl) {
-      const base = envUrl.split('/api')[0] || envUrl;
-      return `${base}${finalPath}`;
-    }
-    
-    return finalPath;
-  };
 
   // useMemo prevents recalculating on every re-render unless cart items change
   const cartSummary = useMemo(() => {

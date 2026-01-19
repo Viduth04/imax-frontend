@@ -8,58 +8,13 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import toast from 'react-hot-toast';
 import api from '../api.js'; // Used this instead of axios
+import { getImageUrl } from '../utils/imageUtils.js';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { checkAuth } = useAuth(); // Assuming checkAuth is a function or boolean
   const { addToCart } = useCart();
-
-  // Get base URL for serving static files (images)
-  const getBaseUrl = () => {
-    const apiBase = api.defaults.baseURL || '';
-    
-    if (apiBase && apiBase.includes('/api')) {
-      return apiBase.split('/api')[0];
-    }
-    
-    if (import.meta.env.DEV) {
-      return 'http://localhost:10000';
-    }
-    
-    const envUrl = import.meta.env.VITE_BACKEND_URL?.trim().replace(/\/+$/, '');
-    if (envUrl) {
-      return envUrl.split('/api')[0] || envUrl;
-    }
-    
-    return '';
-  };
-
-  const BASE_URL = getBaseUrl();
-
-  // Logic to handle full image pathing
-  const getImageUrl = (path) => {
-    if (!path) {
-      return 'https://placehold.co/400x400?text=No+Image';
-    }
-    
-    // If already a full URL, return as is
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
-    
-    // Normalize the path
-    const cleanPath = path.replace(/\\/g, '/');
-    const finalPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
-    
-    // Construct full URL
-    const fullUrl = BASE_URL ? `${BASE_URL}${finalPath}` : finalPath;
-    
-    // Debug logging
-    console.log('ProductDetail - Image path:', path, '→ Full URL:', fullUrl);
-    
-    return fullUrl;
-  };
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);

@@ -12,17 +12,17 @@ const Home = () => {
 
   const heroImages = [
     {
-      url: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80&t=' + Date.now(),
+      url: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
       title: 'Premium Computer Parts',
       subtitle: 'Build your dream PC with top-quality components and hardware'
     },
     {
-      url: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80&t=' + Date.now(),
+      url: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
       title: 'Latest PC Components',
       subtitle: 'CPUs, GPUs, RAM, Motherboards & More - Everything for your build'
     },
     {
-      url: 'https://images.unsplash.com/photo-1562979314-bee7453e911c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80&t=' + Date.now(),
+      url: 'https://images.unsplash.com/photo-1562979314-bee7453e911c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
       title: 'Expert PC Building',
       subtitle: 'Get professional advice and support for your custom PC build'
     }

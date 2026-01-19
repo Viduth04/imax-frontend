@@ -3,76 +3,9 @@ import { Plus, Edit2, Trash2, X, Search, Upload, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../api.js';
 import * as Yup from 'yun';
+import { getImageUrl } from '../utils/imageUtils.js';
 
 const ProductManagement = () => {
-  // Get base URL for serving static files (images)
-  const getBaseUrl = () => {
-    const apiBase = api.defaults.baseURL || '';
-    
-    // If VITE_BACKEND_URL is set, extract the base URL
-    if (apiBase && apiBase.includes('/api')) {
-      return apiBase.split('/api')[0];
-    }
-    
-    // For local development, use localhost:10000 (backend port)
-    if (import.meta.env.DEV) {
-      return 'http://localhost:10000';
-    }
-    
-    // For production, try to extract from env or use empty string
-    const envUrl = import.meta.env.VITE_BACKEND_URL?.trim().replace(/\/+$/, '');
-    if (envUrl) {
-      return envUrl.split('/api')[0] || envUrl;
-    }
-    
-    return '';
-  };
-
-  const BASE_URL = getBaseUrl();
-
-  // Logic to handle full image pathing
-  const getImageUrl = (path) => {
-    if (!path) {
-      console.warn('⚠️ ProductManagement: No image path provided');
-      return 'https://placehold.co/400x400?text=No+Image';
-    }
-    
-    // If already a full URL, return as is
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
-    
-    // Normalize the path - ensure it starts with /uploads
-    let cleanPath = path.replace(/\\/g, '/');
-    if (!cleanPath.startsWith('/')) {
-      cleanPath = '/' + cleanPath;
-    }
-    
-    // Ensure it's the uploads path
-    if (!cleanPath.startsWith('/uploads')) {
-      cleanPath = '/uploads' + (cleanPath.startsWith('/') ? '' : '/') + cleanPath.replace(/^\/+/, '');
-    }
-    
-    // Construct full URL
-    const base = BASE_URL || 'http://localhost:10000';
-    const fullUrl = `${base}${cleanPath}`;
-    
-    // Debug logging
-    if (!getImageUrl.loggedPaths) {
-      getImageUrl.loggedPaths = new Set();
-    }
-    if (!getImageUrl.loggedPaths.has(path)) {
-      getImageUrl.loggedPaths.add(path);
-      console.log('🖼️ ProductManagement Image URL:', {
-        originalPath: path,
-        cleanedPath: cleanPath,
-        baseUrl: base,
-        fullUrl: fullUrl
-      });
-    }
-    
-    return fullUrl;
-  };
 
   const [products, setProducts] = useState([]);
   const [categories] = useState([

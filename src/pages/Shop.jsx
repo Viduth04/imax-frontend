@@ -5,78 +5,12 @@ import { useCart } from '../context/CartContext';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../api.js'; // Using your custom api instance
+import { getImageUrl } from '../utils/imageUtils.js';
 
 const Shop = () => {
   const { user } = useAuth(); // Changed to user to check authentication status
   const { addToCart } = useCart();
   const navigate = useNavigate();
-  
-  // Get base URL for serving static files (images)
-  const getBaseUrl = () => {
-    const apiBase = api.defaults.baseURL || '';
-    
-    if (apiBase && apiBase.includes('/api')) {
-      return apiBase.split('/api')[0];
-    }
-    
-    if (import.meta.env.DEV) {
-      return 'http://localhost:10000';
-    }
-    
-    const envUrl = import.meta.env.VITE_BACKEND_URL?.trim().replace(/\/+$/, '');
-    if (envUrl) {
-      return envUrl.split('/api')[0] || envUrl;
-    }
-    
-    return '';
-  };
-
-  const BASE_URL = getBaseUrl();
-
-  // Logic to handle full image pathing
-  const getImageUrl = (path) => {
-    if (!path) {
-      console.warn('⚠️ No image path provided');
-      return 'https://placehold.co/400x400?text=No+Image';
-    }
-    
-    // If already a full URL, return as is
-    if (path.startsWith('http://') || path.startsWith('https://')) {
-      return path;
-    }
-    
-    // Normalize the path - ensure it starts with /uploads
-    let cleanPath = path.replace(/\\/g, '/');
-    if (!cleanPath.startsWith('/')) {
-      cleanPath = '/' + cleanPath;
-    }
-    
-    // Ensure it's the uploads path (backend saves as /uploads/products/filename)
-    if (!cleanPath.startsWith('/uploads')) {
-      // If path doesn't start with /uploads, assume it's relative to uploads
-      cleanPath = '/uploads' + (cleanPath.startsWith('/') ? '' : '/') + cleanPath.replace(/^\/+/, '');
-    }
-    
-    // Construct full URL
-    const base = BASE_URL || 'http://localhost:10000';
-    const fullUrl = `${base}${cleanPath}`;
-    
-    // Debug logging - only log once per unique path
-    if (!getImageUrl.loggedPaths) {
-      getImageUrl.loggedPaths = new Set();
-    }
-    if (!getImageUrl.loggedPaths.has(path)) {
-      getImageUrl.loggedPaths.add(path);
-      console.log('🖼️ Image URL Construction:', {
-        originalPath: path,
-        cleanedPath: cleanPath,
-        baseUrl: base,
-        fullUrl: fullUrl
-      });
-    }
-    
-    return fullUrl;
-  };
   
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
