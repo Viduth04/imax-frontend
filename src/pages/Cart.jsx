@@ -8,6 +8,31 @@ const Cart = () => {
   const navigate = useNavigate();
   const { cart, updateCartItem, removeFromCart, clearCart, loading } = useCart();
 
+  // Logic to handle full image pathing
+  const getImageUrl = (path) => {
+    if (!path) return 'https://placehold.co/400x400?text=No+Image';
+    
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    
+    const cleanPath = path.replace(/\\/g, '/');
+    const finalPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+    
+    // Use relative path or construct with base URL if available
+    if (import.meta.env.DEV) {
+      return `http://localhost:10000${finalPath}`;
+    }
+    
+    const envUrl = import.meta.env.VITE_BACKEND_URL?.trim().replace(/\/+$/, '');
+    if (envUrl) {
+      const base = envUrl.split('/api')[0] || envUrl;
+      return `${base}${finalPath}`;
+    }
+    
+    return finalPath;
+  };
+
   // useMemo prevents recalculating on every re-render unless cart items change
   const cartSummary = useMemo(() => {
     if (!cart?.items) return { subtotal: 0, shipping: 0, total: 0 };
@@ -107,9 +132,12 @@ const Cart = () => {
               <div key={item.product?._id} className="group bg-white rounded-2xl p-4 sm:p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row gap-6 relative">
                 <div className="w-full sm:w-32 h-32 bg-slate-50 rounded-xl overflow-hidden flex-shrink-0 border border-slate-100">
                   <img
-                    src={item.product?.images?.[0] || '/placeholder-product.png'}
+                    src={getImageUrl(item.product?.images?.[0])}
                     alt={item.product?.name}
-                    className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform"
+                    className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      e.target.src = 'https://placehold.co/128x128?text=No+Image';
+                    }}
                   />
                 </div>
 

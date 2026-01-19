@@ -15,6 +15,46 @@ const ProductDetail = () => {
   const { checkAuth } = useAuth(); // Assuming checkAuth is a function or boolean
   const { addToCart } = useCart();
 
+  // Get base URL for serving static files (images)
+  const getBaseUrl = () => {
+    const apiBase = api.defaults.baseURL || '';
+    
+    if (apiBase && apiBase.includes('/api')) {
+      return apiBase.split('/api')[0];
+    }
+    
+    if (import.meta.env.DEV) {
+      return 'http://localhost:10000';
+    }
+    
+    const envUrl = import.meta.env.VITE_BACKEND_URL?.trim().replace(/\/+$/, '');
+    if (envUrl) {
+      return envUrl.split('/api')[0] || envUrl;
+    }
+    
+    return '';
+  };
+
+  const BASE_URL = getBaseUrl();
+
+  // Logic to handle full image pathing
+  const getImageUrl = (path) => {
+    if (!path) return 'https://placehold.co/400x400?text=No+Image';
+    
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    
+    const cleanPath = path.replace(/\\/g, '/');
+    const finalPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+    
+    if (BASE_URL) {
+      return `${BASE_URL}${finalPath}`;
+    }
+    
+    return finalPath;
+  };
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -99,16 +139,19 @@ const ProductDetail = () => {
           Back to Shop
         </button>
 
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 p-6 lg:p-12">
             
             {/* Left: Gallery */}
-            <div className="space-y-4">
+            <div className="space-y-4 animate-slide-in-left">
               <div className="relative aspect-square bg-slate-50 rounded-2xl overflow-hidden border border-slate-100">
                 <img
-                  src={product.images[selectedImage]}
+                  src={getImageUrl(product.images?.[selectedImage])}
                   alt={product.name}
                   className="w-full h-full object-contain p-4"
+                  onError={(e) => {
+                    e.target.src = 'https://placehold.co/400x400?text=No+Image';
+                  }}
                 />
                 
                 {product.images.length > 1 && (
@@ -137,7 +180,7 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {product.images.length > 1 && (
+              {product.images && product.images.length > 1 && (
                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                   {product.images.map((img, idx) => (
                     <button
@@ -147,7 +190,14 @@ const ProductDetail = () => {
                         selectedImage === idx ? 'border-blue-500 scale-95' : 'border-slate-200 opacity-60 hover:opacity-100'
                       }`}
                     >
-                      <img src={img} className="w-full h-full object-cover" alt="thumbnail" />
+                      <img 
+                        src={getImageUrl(img)} 
+                        className="w-full h-full object-cover" 
+                        alt="thumbnail"
+                        onError={(e) => {
+                          e.target.src = 'https://placehold.co/80x80?text=Image';
+                        }}
+                      />
                     </button>
                   ))}
                 </div>
@@ -155,7 +205,7 @@ const ProductDetail = () => {
             </div>
 
             {/* Right: Details */}
-            <div className="flex flex-col">
+            <div className="flex flex-col animate-slide-in-right">
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">

@@ -11,6 +11,46 @@ const Shop = () => {
   const { addToCart } = useCart();
   const navigate = useNavigate();
   
+  // Get base URL for serving static files (images)
+  const getBaseUrl = () => {
+    const apiBase = api.defaults.baseURL || '';
+    
+    if (apiBase && apiBase.includes('/api')) {
+      return apiBase.split('/api')[0];
+    }
+    
+    if (import.meta.env.DEV) {
+      return 'http://localhost:10000';
+    }
+    
+    const envUrl = import.meta.env.VITE_BACKEND_URL?.trim().replace(/\/+$/, '');
+    if (envUrl) {
+      return envUrl.split('/api')[0] || envUrl;
+    }
+    
+    return '';
+  };
+
+  const BASE_URL = getBaseUrl();
+
+  // Logic to handle full image pathing
+  const getImageUrl = (path) => {
+    if (!path) return 'https://placehold.co/400x400?text=No+Image';
+    
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    
+    const cleanPath = path.replace(/\\/g, '/');
+    const finalPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+    
+    if (BASE_URL) {
+      return `${BASE_URL}${finalPath}`;
+    }
+    
+    return finalPath;
+  };
+  
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,7 +69,21 @@ const Shop = () => {
   });
 
   const [brands, setBrands] = useState([]);
-  const categoryOptions = ['CPU', 'GPU', 'Motherboard', 'RAM', 'Storage', 'PSU', 'Case', 'Cooling', 'Peripherals', 'Accessories'];
+  const categoryOptions = [
+    'Laptops', 
+    'Desktops', 
+    'Processors (CPU)', 
+    'Motherboards', 
+    'RAM (Memory)', 
+    'Graphics Cards (GPU)', 
+    'Storage (SSD/HDD)', 
+    'Power Supplies (PSU)', 
+    'Monitors', 
+    'Casing', 
+    'Cooling Solutions', 
+    'Keyboards & Mice', 
+    'Accessories'
+  ];
 
   // Fetch products when dependencies change
   useEffect(() => {
@@ -367,19 +421,23 @@ const Shop = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product) => (
+                {products.map((product, index) => (
                   <div
                     key={product._id}
-                    className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+                    className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl hover:-translate-y-2 transition-all duration-300 group animate-fade-in-up"
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div
                       className="relative h-56 bg-slate-100 cursor-pointer overflow-hidden"
                       onClick={() => handleProductClick(product._id)}
                     >
                       <img
-                        src={product.images[0] || 'https://via.placeholder.com/400x400?text=No+Image'}
+                        src={getImageUrl(product.images?.[0])}
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        onError={(e) => {
+                          e.target.src = 'https://placehold.co/400x400?text=No+Image';
+                        }}
                       />
                       {product.featured && (
                         <div className="absolute top-3 left-3">

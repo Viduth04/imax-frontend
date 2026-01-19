@@ -15,19 +15,19 @@ const Home = () => {
 
   const heroImages = [
     {
-      url: Img1,
-      title: 'Expert Computer Solutions',
-      subtitle: 'Professional IT services and sales across Sri Lanka'
+      url: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?ixlib=rb-4.0.3&auto=format&fit=crop&w=2071&q=80',
+      title: 'Premium Computer Parts',
+      subtitle: 'Build your dream PC with top-quality components and hardware'
     },
     {
-      url: Img2,
-      title: 'Latest Technology',
-      subtitle: 'Cutting-edge computers, laptops, and accessories'
+      url: 'https://images.unsplash.com/photo-1587202372634-32705e3bf49c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      title: 'Latest PC Components',
+      subtitle: 'CPUs, GPUs, RAM, Motherboards & More - Everything for your build'
     },
     {
-      url: Img3,
-      title: 'Reliable Support',
-      subtitle: '24/7 technical support for all your IT needs'
+      url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      title: 'Expert PC Building',
+      subtitle: 'Get professional advice and support for your custom PC build'
     }
   ];
 
@@ -48,36 +48,36 @@ const Home = () => {
 
   const serviceCategories = [
     {
-      name: 'Computer Repair',
+      name: 'Processors & CPU',
+      icon: Settings,
+      items: ['Intel Processors', 'AMD Ryzen CPUs', 'CPU Coolers', 'Thermal Paste'],
+      image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'
+    },
+    {
+      name: 'Graphics Cards',
       icon: Monitor,
-      items: ['Hardware Repair', 'Software Installation', 'Virus Removal', 'Data Recovery'],
-      image: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?ixlib=rb-4.0.3'
+      items: ['NVIDIA RTX Series', 'AMD Radeon GPUs', 'Gaming Cards', 'Workstation GPUs'],
+      image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?ixlib=rb-4.0.3&auto=format&fit=crop&w=2071&q=80'
     },
     {
-      name: 'Laptop Services',
-      icon: Laptop,
-      items: ['Screen Replacement', 'Battery Replacement', 'Keyboard Repair', 'Performance Upgrade'],
-      image: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?ixlib=rb-4.0.3'
-    },
-    {
-      name: 'Network Solutions',
-      icon: Wifi,
-      items: ['WiFi Setup', 'Network Configuration', 'Router Installation', 'Cable Management'],
-      image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?ixlib=rb-4.0.3'
-    },
-    {
-      name: 'Sales & Accessories',
+      name: 'Memory & Storage',
       icon: Package,
-      items: ['Desktop Computers', 'Laptops', 'Printers', 'Storage Devices'],
-      image: 'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?ixlib=rb-4.0.3'
+      items: ['DDR4/DDR5 RAM', 'SSD Drives', 'NVMe M.2', 'HDD Storage'],
+      image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'
+    },
+    {
+      name: 'Motherboards & Cases',
+      icon: Laptop,
+      items: ['ATX Motherboards', 'Mini-ITX Boards', 'PC Cases', 'RGB Cases'],
+      image: 'https://images.unsplash.com/photo-1593640408182-31c70c8268f5?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80'
     }
   ];
 
   const serviceProcess = [
-    { step: 1, title: 'Contact Us', description: 'Call or visit our service center for consultation' },
-    { step: 2, title: 'Diagnosis', description: 'Free diagnosis and detailed cost estimation' },
-    { step: 3, title: 'Repair/Install', description: 'Professional service by certified technicians' },
-    { step: 4, title: 'Quality Check', description: 'Thorough testing and warranty coverage' }
+    { step: 1, title: 'Browse Products', description: 'Explore our wide range of computer parts and components' },
+    { step: 2, title: 'Select Components', description: 'Choose the perfect parts for your PC build needs' },
+    { step: 3, title: 'Order & Delivery', description: 'Fast shipping across Sri Lanka with secure payment' },
+    { step: 4, title: 'Build Your PC', description: 'Get expert advice and support for your custom build' }
   ];
 
   const testimonials = [
@@ -107,69 +107,95 @@ const Home = () => {
       {/* Hero Section - Logic updated to use currentSlide */}
       <section className="relative h-screen overflow-hidden">
         <div className="absolute inset-0">
-          <img
-            src={heroImages[currentSlide].url}
-            alt={heroImages[currentSlide].title}
-            className="w-full h-full object-cover transition-opacity duration-1000"
-          />
-          <div className="absolute inset-0 bg-black/40" />
+          {heroImages.map((img, index) => (
+            <img
+              key={index}
+              src={img.url}
+              alt={img.title}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
+                index === currentSlide ? 'opacity-100' : 'opacity-0'
+              }`}
+            />
+          ))}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/30" />
         </div>
         
         <div className="relative z-10 container mx-auto px-4 h-full flex items-center">
-          <div className="max-w-xl text-white">
-            <h1 className="text-5xl md:text-6xl font-bold mb-4 text-left">
+          <div className="max-w-2xl text-white animate-fade-in-up">
+            <h1 className="text-5xl md:text-7xl font-extrabold mb-6 text-left leading-tight animate-slide-in-left">
               {heroImages[currentSlide].title}
             </h1>
-            <p className="text-xl md:text-2xl mb-8 text-left">
+            <p className="text-xl md:text-3xl mb-10 text-left text-gray-200 animate-slide-in-right">
               {heroImages[currentSlide].subtitle}
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 animate-fade-in">
               {user ? (
                 <Link
-                  to={user.role === 'admin' ? '/admin/dashboard' : '/services'}
-                  className="inline-flex items-center px-8 py-4 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-colors"
+                  to={user.role === 'admin' ? '/admin/dashboard' : '/shop'}
+                  className="inline-flex items-center px-10 py-5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl text-lg"
                 >
-                  Browse Services
-                  <ArrowRight className="ml-2 w-5 h-5" />
+                  Browse Products
+                  <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
                 </Link>
               ) : (
                 <>
                   <Link
-                    to="/register"
-                    className="inline-flex items-center px-8 py-4 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-colors"
+                    to="/shop"
+                    className="inline-flex items-center px-10 py-5 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl text-lg"
                   >
-                    Get Started
-                    <ArrowRight className="ml-2 w-5 h-5" />
+                    Shop Now
+                    <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-1 transition-transform" />
                   </Link>
                   <Link
-                    to="/services"
-                    className="inline-flex items-center px-8 py-4 bg-white text-slate-800 font-medium rounded-lg hover:bg-gray-100 transition-colors"
+                    to="/shop"
+                    className="inline-flex items-center px-10 py-5 bg-white/10 backdrop-blur-sm text-white font-bold rounded-xl hover:bg-white/20 hover:scale-105 transition-all duration-300 border-2 border-white/30 text-lg"
                   >
-                    View Services
+                    Browse Products
                   </Link>
                 </>
               )}
             </div>
           </div>
         </div>
+
+        {/* Slide Indicators */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex gap-3">
+          {heroImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                index === currentSlide ? 'w-8 bg-white' : 'w-2 bg-white/50 hover:bg-white/75'
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-16 bg-white">
+      <section className="py-20 bg-gradient-to-b from-white to-slate-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">
-            Why Choose IMAX Computer Services?
+          <h2 className="text-4xl md:text-5xl font-extrabold text-center text-slate-900 mb-4 animate-fade-in">
+            Why Choose IMAX Computer Parts?
           </h2>
+          <p className="text-center text-slate-600 mb-16 text-lg max-w-2xl mx-auto animate-fade-in">
+            Your one-stop shop for premium computer components and expert PC building support
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <div key={index} className="text-center group hover:transform hover:scale-105 transition-transform">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full mb-4 group-hover:bg-blue-200 transition-colors">
-                  <feature.icon className="w-8 h-8" />
+              <div 
+                key={index} 
+                className="text-center group hover:transform hover:scale-105 transition-all duration-300 animate-fade-in-up"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl mb-6 group-hover:from-blue-600 group-hover:to-blue-700 group-hover:rotate-6 transition-all duration-300 shadow-lg group-hover:shadow-xl">
+                  <feature.icon className="w-10 h-10" />
                 </div>
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-blue-600 transition-colors">
                   {feature.title}
                 </h3>
-                <p className="text-slate-600">
+                <p className="text-slate-600 leading-relaxed">
                   {feature.description}
                 </p>
               </div>
@@ -178,35 +204,42 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Service Categories */}
-      <section className="py-16 bg-slate-50">
+      {/* Product Categories */}
+      <section className="py-20 bg-gradient-to-b from-slate-50 to-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-slate-900 mb-4">
-            Our Services
+          <h2 className="text-4xl md:text-5xl font-extrabold text-center text-slate-900 mb-4 animate-fade-in">
+            Our Product Categories
           </h2>
-          <p className="text-center text-slate-600 mb-12 max-w-2xl mx-auto">
-            Comprehensive IT solutions from expert repairs to latest technology sales across Sri Lanka
+          <p className="text-center text-slate-600 mb-16 text-lg max-w-2xl mx-auto animate-fade-in">
+            Everything you need to build your dream PC - from processors to peripherals
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {serviceCategories.map((category, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-                <div className="h-48 overflow-hidden">
+              <div 
+                key={index} 
+                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 hover-lift animate-fade-in-up group"
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <div className="h-48 overflow-hidden relative">
                   <img 
                     src={category.image} 
                     alt={category.name}
-                    className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-125 transition-transform duration-500"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </div>
                 <div className="p-6">
-                  <div className="flex items-center mb-3">
-                    <category.icon className="w-6 h-6 text-blue-600 mr-2" />
-                    <h3 className="text-xl font-semibold text-slate-900">{category.name}</h3>
+                  <div className="flex items-center mb-4">
+                    <div className="p-2 bg-blue-100 rounded-lg mr-3 group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
+                      <category.icon className="w-6 h-6 text-blue-600 group-hover:text-white transition-colors" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{category.name}</h3>
                   </div>
-                  <ul className="space-y-1">
+                  <ul className="space-y-2">
                     {category.items.map((item, idx) => (
-                      <li key={idx} className="text-slate-600 text-sm flex items-center">
-                        <CheckCircle className="w-4 h-4 text-blue-500 mr-2" />
-                        {item}
+                      <li key={idx} className="text-slate-600 text-sm flex items-center group-hover:text-slate-700 transition-colors">
+                        <CheckCircle className="w-4 h-4 text-blue-500 mr-2 flex-shrink-0" />
+                        <span>{item}</span>
                       </li>
                     ))}
                   </ul>
@@ -218,25 +251,32 @@ const Home = () => {
       </section>
 
       {/* Service Process */}
-      <section className="py-16 bg-white">
+      <section className="py-20 bg-gradient-to-b from-white to-slate-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-slate-900 mb-12">
+          <h2 className="text-4xl md:text-5xl font-extrabold text-center text-slate-900 mb-4 animate-fade-in">
             How We Work
           </h2>
+          <p className="text-center text-slate-600 mb-16 text-lg max-w-2xl mx-auto animate-fade-in">
+            Simple steps to get the perfect components for your PC build
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {serviceProcess.map((step, index) => (
-              <div key={index} className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500 text-white rounded-full mb-4 text-xl font-bold">
+              <div 
+                key={index} 
+                className="text-center animate-fade-in-up group"
+                style={{ animationDelay: `${index * 150}ms` }}
+              >
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl mb-6 text-2xl font-extrabold shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
                   {step.step}
                 </div>
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">
+                <h3 className="text-xl font-bold text-slate-900 mb-3 group-hover:text-blue-600 transition-colors">
                   {step.title}
                 </h3>
-                <p className="text-slate-600">
+                <p className="text-slate-600 leading-relaxed">
                   {step.description}
                 </p>
                 {index < serviceProcess.length - 1 && (
-                  <ArrowRight className="hidden lg:block w-8 h-8 text-blue-500 mx-auto mt-4" />
+                  <ArrowRight className="hidden lg:block w-8 h-8 text-blue-500 mx-auto mt-6 group-hover:translate-x-2 transition-transform duration-300" />
                 )}
               </div>
             ))}
