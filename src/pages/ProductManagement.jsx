@@ -35,9 +35,8 @@ const ProductManagement = () => {
     specifications: {}
   });
 
-  // IMAGE STATES
-  const [existingImages, setExistingImages] = useState([]); // URLs from database
-  const [newImages, setNewImages] = useState([]); // File objects from input
+  const [existingImages, setExistingImages] = useState([]); 
+  const [newImages, setNewImages] = useState([]); 
   const [formErrors, setFormErrors] = useState({});
   
   const validationSchema = Yup.object().shape({
@@ -94,7 +93,7 @@ const ProductManagement = () => {
 
   const handleEdit = (product) => {
     setEditingProduct(product);
-    setExistingImages(product.images || []); // Important: sync with DB
+    setExistingImages(product.images || []); 
     setNewImages([]); 
     setFormData({
       name: product.name,
@@ -150,11 +149,10 @@ const ProductManagement = () => {
         }
       });
 
-      // CRITICAL: Send the list of images that remain after you clicked "X"
-      // Backend must use this to overwrite the old image array
+      // Send the cleaned list of old images (those not deleted by user)
       submitData.append('existingImages', JSON.stringify(existingImages));
       
-      // Send new files
+      // Append new files
       newImages.forEach(img => submitData.append('images', img));
 
       const request = editingProduct 
@@ -173,7 +171,7 @@ const ProductManagement = () => {
         error.inner.forEach(err => errors[err.path] = err.message);
         setFormErrors(errors);
       } else {
-        toast.error(error.response?.data?.message || 'Server Error');
+        toast.error(error.response?.data?.message || 'Update failed');
       }
     } finally {
       setIsSubmitting(false);
@@ -182,7 +180,6 @@ const ProductManagement = () => {
 
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Inventory</h1>
@@ -197,7 +194,6 @@ const ProductManagement = () => {
         </button>
       </div>
 
-      {/* Filters */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="relative group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
@@ -219,7 +215,6 @@ const ProductManagement = () => {
         </select>
       </div>
 
-      {/* Product Grid */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
@@ -230,7 +225,7 @@ const ProductManagement = () => {
           {products.map(product => (
             <div key={product._id} className="group bg-white rounded-3xl border border-slate-200 p-4 hover:shadow-xl transition-all duration-300">
                <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 mb-4">
-                  <img src={product.images[0]} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <img src={product.images && product.images[0]} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute top-3 left-3 flex gap-2">
                     <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${product.status === 'active' ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white'}`}>
                       {product.status}
@@ -262,7 +257,6 @@ const ProductManagement = () => {
         </div>
       )}
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
@@ -316,7 +310,6 @@ const ProductManagement = () => {
                 <textarea rows="4" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 resize-none" required />
               </div>
 
-              {/* IMAGE UPLOAD & PREVIEW SECTION */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Product Images</label>
                 <div className="space-y-4">
@@ -327,22 +320,16 @@ const ProductManagement = () => {
                     onChange={(e) => {
                        const files = Array.from(e.target.files);
                        setNewImages(prev => [...prev, ...files]);
-                       e.target.value = null; // Clear input so same file can be selected again
+                       e.target.value = null; 
                     }}
                     className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500"
                   />
                   
                   {(existingImages.length > 0 || newImages.length > 0) && (
                     <div className="flex flex-wrap gap-3 p-3 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
-                      
-                      {/* Saved Images */}
                       {existingImages.map((url, index) => (
                         <div key={`existing-${index}`} className="relative w-20 h-20 group">
-                          <img 
-                            src={url} 
-                            alt="" 
-                            className="w-full h-full object-cover rounded-xl shadow-sm border border-white" 
-                          />
+                          <img src={url} alt="" className="w-full h-full object-cover rounded-xl shadow-sm border border-white" />
                           <button
                             type="button"
                             onClick={() => setExistingImages(prev => prev.filter((_, i) => i !== index))}
@@ -350,18 +337,12 @@ const ProductManagement = () => {
                           >
                             <X className="w-3 h-3" />
                           </button>
-                          <span className="absolute bottom-1 left-1 bg-blue-600 text-[8px] text-white px-1 rounded">Saved</span>
                         </div>
                       ))}
 
-                      {/* New Previews */}
                       {newImages.map((file, index) => (
                         <div key={`new-${index}`} className="relative w-20 h-20 group">
-                          <img 
-                            src={URL.createObjectURL(file)} 
-                            alt="" 
-                            className="w-full h-full object-cover rounded-xl shadow-sm border-2 border-blue-400" 
-                          />
+                          <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover rounded-xl shadow-sm border-2 border-blue-400" />
                           <button
                             type="button"
                             onClick={() => setNewImages(prev => prev.filter((_, i) => i !== index))}
@@ -369,7 +350,6 @@ const ProductManagement = () => {
                           >
                             <X className="w-3 h-3" />
                           </button>
-                          <span className="absolute bottom-1 left-1 bg-emerald-600 text-[8px] text-white px-1 rounded">New</span>
                         </div>
                       ))}
                     </div>
