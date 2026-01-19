@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useFormik } from 'formik';
 import { feedbackSchema } from '../../utils/validationSchemas';
 import { Send, Star, Shield, AlertCircle, Monitor, Cpu, HardDrive, Users, Award, ThumbsUp } from 'lucide-react';
-import api from '../../api'; // Correctly using the production-ready instance
+import api from '../../api';
 import toast from 'react-hot-toast';
 
 const FeedbackForm = ({ onSuccess, existingFeedback = null }) => {

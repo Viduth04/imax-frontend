@@ -92,8 +92,10 @@ const Checkout = () => {
       if (form.paymentMethod === "cash-on-delivery") {
         setPaymentRef(`COD-${String(newOrder._id).slice(-6).toUpperCase()}`);
         setOrderId(newOrder._id);
+        setCurrentOrder(newOrder);
         setOrderSuccess(true);
         await clearCart();
+        setShowSuccessModal(true);
       } else {
         setCurrentOrder(newOrder);
         setShowPaymentPopup(true);
@@ -110,6 +112,17 @@ const Checkout = () => {
     } finally {
       setLoading(false);
       isProcessingRef.current = false;
+    }
+  };
+
+  const handlePaymentSuccess = async (paymentIntentId, orderId) => {
+    try {
+      setPaymentRef(paymentIntentId);
+      setOrderId(orderId);
+      await clearCart();
+      setShowSuccessModal(true);
+    } catch (error) {
+      toast.error("Failed to process payment success");
     }
   };
 
