@@ -9,8 +9,18 @@ import * as Yup from 'yup';
 
 const ProductManagement = () => {
   // --- CONFIGURATION ---
-  // This extracts the base URL (e.g., http://localhost:5000) from your axios config
-  const BASE_URL = api.defaults.baseURL.replace('/api', '');
+  // Cleanly extract the base URL and ensure no trailing slash
+  const BASE_URL = api.defaults.baseURL.replace('/api', '').replace(/\/$/, "");
+
+  // Helper to construct the full image URL
+  const getImageUrl = (path) => {
+    if (!path) return 'https://placehold.co/400x400?text=No+Image';
+    // If it's already a full URL, return it
+    if (path.startsWith('http')) return path;
+    // Ensure path starts with a slash
+    const formattedPath = path.startsWith('/') ? path : `/${path}`;
+    return `${BASE_URL}${formattedPath}`;
+  };
 
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([
@@ -155,7 +165,6 @@ const ProductManagement = () => {
         }
       });
 
-      // Send instruction on which images to keep
       submitData.append('existingImages', JSON.stringify(existingImages));
       
       newImages.forEach(file => {
@@ -170,7 +179,8 @@ const ProductManagement = () => {
       if (data.success) {
         toast.success(editingProduct ? 'Product Updated' : 'Product Created');
         resetForm();
-        await fetchProducts();
+        // Vital: Refresh to get correct new image paths from server
+        fetchProducts();
       }
     } catch (error) {
       if (error.name === 'ValidationError') {
@@ -202,7 +212,7 @@ const ProductManagement = () => {
         </button>
       </div>
 
-      {/* Search & Filters */}
+      {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -235,7 +245,7 @@ const ProductManagement = () => {
         </select>
       </div>
 
-      {/* Grid */}
+      {/* Product Grid */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
@@ -246,10 +256,10 @@ const ProductManagement = () => {
             <div key={product._id} className="bg-white rounded-3xl border border-slate-200 p-4 hover:shadow-lg transition-all">
                <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 mb-4">
                   <img 
-                    src={product.images?.[0] ? `${BASE_URL}${product.images[0]}` : 'https://placehold.co/400x400?text=No+Image'} 
+                    src={getImageUrl(product.images?.[0])} 
                     alt={product.name} 
                     className="w-full h-full object-cover"
-                    onError={(e) => { e.target.src = 'https://placehold.co/400x400?text=Error'; }}
+                    onError={(e) => { e.target.src = 'https://placehold.co/400x400?text=Error+Loading'; }}
                   />
                   <div className="absolute top-2 left-2">
                     <span className={`px-2 py-1 rounded-md text-[10px] font-bold text-white uppercase ${product.status === 'active' ? 'bg-emerald-500' : 'bg-slate-500'}`}>
@@ -262,7 +272,7 @@ const ProductManagement = () => {
                <p className="text-blue-600 font-bold mb-4">LKR {product.price.toLocaleString()}</p>
                
                <div className="flex gap-2">
-                 <button onClick={() => handleEdit(product)} className="flex-1 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-blue-100 hover:text-blue-600 transition-colors flex justify-center items-center gap-1">
+                 <button onClick={() => handleEdit(product)} className="flex-1 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-blue-100 hover:text-blue-600 transition-colors flex justify-center items-center gap-1 font-bold">
                    <Edit2 className="w-4 h-4" /> Edit
                  </button>
                  <button onClick={() => handleDelete(product._id)} className="p-2 bg-slate-100 text-red-500 rounded-lg hover:bg-red-100 transition-colors">
@@ -280,56 +290,80 @@ const ProductManagement = () => {
           <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-6">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold">{editingProduct ? 'Edit Product' : 'New Product'}</h2>
-              <button onClick={resetForm} className="p-2 hover:bg-slate-100 rounded-full"><X /></button>
+              <button onClick={resetForm} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X /></button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-slate-700 mb-1">Product Name</label>
-                  <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-2 border rounded-xl" required />
+                  <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-2 border rounded-xl outline-blue-500" required />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1">Category</label>
-                  <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-2 border rounded-xl" required>
+                  <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-2 border rounded-xl outline-blue-500" required>
                     <option value="">Select Category</option>
                     {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1">Price</label>
-                  <input type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full px-4 py-2 border rounded-xl" required />
+                  <label className="block text-sm font-bold text-slate-700 mb-1">Price (LKR)</label>
+                  <input type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full px-4 py-2 border rounded-xl outline-blue-500" required />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-slate-700 mb-2">Images</label>
-                <div className="grid grid-cols-4 gap-4 mb-4">
-                  {/* Current Server Images */}
+                <label className="block text-sm font-bold text-slate-700 mb-2">Manage Images</label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                  {/* Render Existing Images from Server */}
                   {existingImages.map((img, i) => (
-                    <div key={i} className="relative aspect-square border rounded-lg overflow-hidden group">
-                      <img src={`${BASE_URL}${img}`} className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => setExistingImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100"><X size={12}/></button>
+                    <div key={`exist-${i}`} className="relative aspect-square border rounded-lg overflow-hidden group">
+                      <img src={getImageUrl(img)} className="w-full h-full object-cover" alt="product" />
+                      <button 
+                        type="button" 
+                        onClick={() => setExistingImages(prev => prev.filter((_, idx) => idx !== i))} 
+                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X size={14}/>
+                      </button>
                     </div>
                   ))}
-                  {/* New Upload Previews */}
+                  {/* Render New Previews for Uploads */}
                   {newImages.map((file, i) => (
-                    <div key={i} className="relative aspect-square border-2 border-blue-400 rounded-lg overflow-hidden">
-                      <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full"><X size={12}/></button>
+                    <div key={`new-${i}`} className="relative aspect-square border-2 border-blue-400 rounded-lg overflow-hidden group">
+                      <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="preview" />
+                      <button 
+                        type="button" 
+                        onClick={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))} 
+                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full"
+                      >
+                        <X size={14}/>
+                      </button>
                     </div>
                   ))}
-                  <label className="aspect-square border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-slate-50">
+                  {/* Upload Trigger */}
+                  <label className="aspect-square border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 transition-colors">
                     <Upload className="text-slate-400" />
-                    <input type="file" multiple className="hidden" onChange={(e) => setNewImages([...newImages, ...Array.from(e.target.files)])} />
+                    <span className="text-[10px] text-slate-500 mt-1 font-bold">UPLOAD</span>
+                    <input 
+                      type="file" 
+                      multiple 
+                      accept="image/*"
+                      className="hidden" 
+                      onChange={(e) => setNewImages([...newImages, ...Array.from(e.target.files)])} 
+                    />
                   </label>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3">
-                <button type="button" onClick={resetForm} className="px-6 py-2 border rounded-xl font-bold">Cancel</button>
-                <button type="submit" disabled={isSubmitting} className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold disabled:opacity-50">
-                  {isSubmitting ? 'Saving...' : 'Save Product'}
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <button type="button" onClick={resetForm} className="px-6 py-2 border rounded-xl font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting} 
+                  className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isSubmitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</> : (editingProduct ? 'Update Changes' : 'Create Product')}
                 </button>
               </div>
             </form>
