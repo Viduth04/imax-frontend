@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import api from '@/api'; // Using your custom api instance
+import api from '../api.js'; // Using your custom api instance
 
 const Shop = () => {
   const { user } = useAuth(); // Changed to user to check authentication status

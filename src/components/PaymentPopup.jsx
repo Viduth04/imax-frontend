@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, CreditCard, Lock, CheckCircle } from 'lucide-react';
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import api from '@/api';
+import api from '../api.js';
 
 const PaymentPopup = ({ 
   isOpen, 

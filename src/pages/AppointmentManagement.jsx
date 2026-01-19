@@ -3,7 +3,7 @@ import { Calendar, Clock, User, Trash2, Filter, UserCheck, AlertCircle, ChevronL
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import toast from 'react-hot-toast';
-import api from '@/api'; // Crucial: Using your custom instance
+import api from '../api.js'; // Crucial: Using your custom instance
 
 const AppointmentManagement = () => {
   const [appointments, setAppointments] = useState([]);

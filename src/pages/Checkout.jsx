@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import * as Yup from "yup";
 import PaymentPopup from "../components/PaymentPopup";
 import PaymentSuccessModal from "../components/PaymentSuccessModal";
-import api from '@/api';
+import api from '../api.js';
 
 /* Validation Constants */
 const LETTERS_ONLY_RE = /^[\p{L}\s]+$/u;

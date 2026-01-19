@@ -7,7 +7,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import toast from 'react-hot-toast';
-import api from '@/api'; // Used this instead of axios
+import api from '../api.js'; // Used this instead of axios
 
 const ProductDetail = () => {
   const { id } = useParams();

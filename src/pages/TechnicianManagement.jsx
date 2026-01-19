@@ -3,7 +3,7 @@ import { Users, UserPlus, Edit2, Trash2, X, Save, AlertCircle, Eye, EyeOff } fro
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import toast from 'react-hot-toast';
-import api from '@/api'; // Your custom axios instance
+import api from '../api.js'; // Your custom axios instance
 
 const TechnicianManagement = () => {
   const [technicians, setTechnicians] = useState([]);

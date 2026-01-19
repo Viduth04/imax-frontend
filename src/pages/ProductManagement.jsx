@@ -4,7 +4,7 @@ import {
   Search, Filter, Upload, Loader2, AlertCircle 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import api from '@/api';
+import api from '../api.js';
 import * as Yup from 'yup';
 
 const ProductManagement = () => {
