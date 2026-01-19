@@ -1,13 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { 
-  Package, Plus, Edit2, Trash2, X, Box, Tag, 
-  Search, Filter, Upload, Loader2, AlertCircle 
+  Plus, Edit2, Trash2, X, Box, Tag, 
+  Search, Upload, Loader2 
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../api.js';
 import * as Yup from 'yup';
 
 const ProductManagement = () => {
+  // --- CONFIGURATION ---
+  // This extracts the base URL (e.g., http://localhost:5000) from your axios config
+  const BASE_URL = api.defaults.baseURL.replace('/api', '');
+
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([
     "Laptops", "Desktops", "Processors (CPU)", "Motherboards", 
@@ -49,7 +53,6 @@ const ProductManagement = () => {
     status: Yup.string().oneOf(['active', 'inactive']),
   });
 
-  // Debounced search/filter fetch
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       fetchProducts();
@@ -144,7 +147,6 @@ const ProductManagement = () => {
       
       const submitData = new FormData();
       
-      // Append fields
       Object.entries(formData).forEach(([key, value]) => {
         if (key === 'specifications') {
           submitData.append(key, JSON.stringify(value));
@@ -153,10 +155,9 @@ const ProductManagement = () => {
         }
       });
 
-      // KEY FIX: Send existing images so backend knows what to keep
+      // Send instruction on which images to keep
       submitData.append('existingImages', JSON.stringify(existingImages));
       
-      // Append new files
       newImages.forEach(file => {
         submitData.append('images', file);
       });
@@ -169,7 +170,6 @@ const ProductManagement = () => {
       if (data.success) {
         toast.success(editingProduct ? 'Product Updated' : 'Product Created');
         resetForm();
-        // Trigger a fresh fetch to ensure UI shows new image paths
         await fetchProducts();
       }
     } catch (error) {
@@ -178,7 +178,7 @@ const ProductManagement = () => {
         error.inner.forEach(err => errors[err.path] = err.message);
         setFormErrors(errors);
       } else {
-        toast.error(error.response?.data?.message || 'Update failed');
+        toast.error(error.response?.data?.message || 'Operation failed');
       }
     } finally {
       setIsSubmitting(false);
@@ -187,36 +187,36 @@ const ProductManagement = () => {
 
   return (
     <div className="p-4 md:p-8 bg-slate-50 min-h-screen">
-      {/* Header Section */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Inventory</h1>
-          <p className="text-slate-500 font-medium">System showing {pagination.total} total items</p>
+          <h1 className="text-3xl font-bold text-slate-900">Inventory</h1>
+          <p className="text-slate-500 font-medium">{pagination.total} items total</p>
         </div>
         <button
           onClick={() => { resetForm(); setShowModal(true); }}
-          className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95"
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 shadow-lg"
         >
           <Plus className="w-5 h-5" />
-          <span className="font-bold">Add New Product</span>
+          <span className="font-bold">Add Product</span>
         </button>
       </div>
 
-      {/* Filter Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+      {/* Search & Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by name..."
-            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 outline-none transition-all"
+            placeholder="Search products..."
+            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl outline-none"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         
         <select 
-          className="px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 outline-none"
+          className="px-4 py-3 bg-white border border-slate-200 rounded-2xl outline-none"
           value={filters.category}
           onChange={(e) => setFilters({...filters, category: e.target.value})}
         >
@@ -225,7 +225,7 @@ const ProductManagement = () => {
         </select>
 
         <select 
-          className="px-4 py-3 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-blue-50 outline-none"
+          className="px-4 py-3 bg-white border border-slate-200 rounded-2xl outline-none"
           value={filters.status}
           onChange={(e) => setFilters({...filters, status: e.target.value})}
         >
@@ -235,166 +235,101 @@ const ProductManagement = () => {
         </select>
       </div>
 
-      {/* Main Grid */}
+      {/* Grid */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20">
-          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
-          <p className="text-slate-500 font-medium">Syncing database...</p>
+          <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {products.map(product => (
-            <div key={product._id} className="group bg-white rounded-3xl border border-slate-200 p-4 hover:shadow-xl transition-all duration-300">
-               <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-100 mb-4">
-                  {/* FIX: Ensure image src is mapped correctly to your backend static path */}
+            <div key={product._id} className="bg-white rounded-3xl border border-slate-200 p-4 hover:shadow-lg transition-all">
+               <div className="relative aspect-square rounded-2xl overflow-hidden bg-slate-100 mb-4">
                   <img 
-                    src={product.images && product.images.length > 0 ? `${api.defaults.baseURL.replace('/api', '')}${product.images[0]}` : '/placeholder.png'} 
-                    alt="" 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                    onError={(e) => { e.target.src = 'https://placehold.co/600x400?text=No+Image'; }}
+                    src={product.images?.[0] ? `${BASE_URL}${product.images[0]}` : 'https://placehold.co/400x400?text=No+Image'} 
+                    alt={product.name} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.target.src = 'https://placehold.co/400x400?text=Error'; }}
                   />
-                  <div className="absolute top-3 left-3 flex gap-2">
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${product.status === 'active' ? 'bg-emerald-500 text-white' : 'bg-slate-500 text-white'}`}>
+                  <div className="absolute top-2 left-2">
+                    <span className={`px-2 py-1 rounded-md text-[10px] font-bold text-white uppercase ${product.status === 'active' ? 'bg-emerald-500' : 'bg-slate-500'}`}>
                       {product.status}
                     </span>
                   </div>
                </div>
 
-               <div className="px-2">
-                  <div className="flex justify-between items-start mb-2 gap-2">
-                    <h3 className="font-bold text-slate-800 text-lg line-clamp-1">{product.name}</h3>
-                    <span className="text-blue-600 font-black whitespace-nowrap">LKR {product.price.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-slate-500 mb-6">
-                    <span className="flex items-center gap-1"><Box className="w-4 h-4" /> {product.quantity} units</span>
-                    <span className="flex items-center gap-1"><Tag className="w-4 h-4" /> {product.category}</span>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <button onClick={() => handleEdit(product)} className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-50 text-slate-700 rounded-xl hover:bg-blue-50 hover:text-blue-600 font-bold transition-colors">
-                      <Edit2 className="w-4 h-4" /> Edit
-                    </button>
-                    <button onClick={() => handleDelete(product._id)} className="px-4 py-2.5 bg-slate-50 text-red-500 rounded-xl hover:bg-red-50 transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+               <h3 className="font-bold text-slate-800 line-clamp-1">{product.name}</h3>
+               <p className="text-blue-600 font-bold mb-4">LKR {product.price.toLocaleString()}</p>
+               
+               <div className="flex gap-2">
+                 <button onClick={() => handleEdit(product)} className="flex-1 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-blue-100 hover:text-blue-600 transition-colors flex justify-center items-center gap-1">
+                   <Edit2 className="w-4 h-4" /> Edit
+                 </button>
+                 <button onClick={() => handleDelete(product._id)} className="p-2 bg-slate-100 text-red-500 rounded-lg hover:bg-red-100 transition-colors">
+                   <Trash2 className="w-4 h-4" />
+                 </button>
                </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Modal Section */}
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center z-20">
-              <h2 className="text-2xl font-bold text-slate-900">{editingProduct ? 'Edit Product' : 'Add New Product'}</h2>
-              <button onClick={resetForm} className="p-2 hover:bg-slate-100 rounded-lg transition-colors"><X className="w-6 h-6 text-slate-600" /></button>
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">{editingProduct ? 'Edit Product' : 'New Product'}</h2>
+              <button onClick={resetForm} className="p-2 hover:bg-slate-100 rounded-full"><X /></button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Product Name *</label>
-                  <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" required />
-                  {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
+                  <label className="block text-sm font-bold text-slate-700 mb-1">Product Name</label>
+                  <input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-2 border rounded-xl" required />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Category *</label>
-                  <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" required>
+                  <label className="block text-sm font-bold text-slate-700 mb-1">Category</label>
+                  <select value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} className="w-full px-4 py-2 border rounded-xl" required>
                     <option value="">Select Category</option>
                     {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Brand *</label>
-                  <input type="text" value={formData.brand} onChange={(e) => setFormData({...formData, brand: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" required />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Price (LKR) *</label>
-                  <input type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" required />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Quantity *</label>
-                  <input type="number" value={formData.quantity} onChange={(e) => setFormData({...formData, quantity: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" required />
+                  <label className="block text-sm font-bold text-slate-700 mb-1">Price</label>
+                  <input type="number" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} className="w-full px-4 py-2 border rounded-xl" required />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Description *</label>
-                <textarea rows="4" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 resize-none outline-none" required />
-              </div>
-
-              {/* Image Upload Area */}
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Product Images</label>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-2xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <Upload className="w-8 h-8 text-slate-400 mb-2" />
-                        <p className="text-sm text-slate-500">Click to upload new images</p>
-                      </div>
-                      <input 
-                        type="file" 
-                        multiple 
-                        accept="image/*" 
-                        className="hidden" 
-                        onChange={(e) => {
-                          const files = Array.from(e.target.files);
-                          setNewImages(prev => [...prev, ...files]);
-                        }} 
-                      />
-                    </label>
-                  </div>
-                  
-                  {(existingImages.length > 0 || newImages.length > 0) && (
-                    <div className="flex flex-wrap gap-4 p-4 bg-white border border-slate-200 rounded-2xl">
-                      {/* Show Current Images */}
-                      {existingImages.map((url, index) => (
-                        <div key={`existing-${index}`} className="relative w-20 h-20 group">
-                          <img src={`${api.defaults.baseURL.replace('/api', '')}${url}`} alt="" className="w-full h-full object-cover rounded-xl" />
-                          <button
-                            type="button"
-                            onClick={() => setExistingImages(prev => prev.filter((_, i) => i !== index))}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-
-                      {/* Show Previews of New Images */}
-                      {newImages.map((file, index) => (
-                        <div key={`new-${index}`} className="relative w-20 h-20 group">
-                          <img src={URL.createObjectURL(file)} alt="" className="w-full h-full object-cover rounded-xl border-2 border-blue-400" />
-                          <button
-                            type="button"
-                            onClick={() => setNewImages(prev => prev.filter((_, i) => i !== index))}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
+                <label className="block text-sm font-bold text-slate-700 mb-2">Images</label>
+                <div className="grid grid-cols-4 gap-4 mb-4">
+                  {/* Current Server Images */}
+                  {existingImages.map((img, i) => (
+                    <div key={i} className="relative aspect-square border rounded-lg overflow-hidden group">
+                      <img src={`${BASE_URL}${img}`} className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => setExistingImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100"><X size={12}/></button>
                     </div>
-                  )}
+                  ))}
+                  {/* New Upload Previews */}
+                  {newImages.map((file, i) => (
+                    <div key={i} className="relative aspect-square border-2 border-blue-400 rounded-lg overflow-hidden">
+                      <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full"><X size={12}/></button>
+                    </div>
+                  ))}
+                  <label className="aspect-square border-2 border-dashed border-slate-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-slate-50">
+                    <Upload className="text-slate-400" />
+                    <input type="file" multiple className="hidden" onChange={(e) => setNewImages([...newImages, ...Array.from(e.target.files)])} />
+                  </label>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-4 pt-4 border-t">
-                <button type="button" onClick={resetForm} className="px-6 py-3 border border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 font-semibold transition-colors">Cancel</button>
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting} 
-                  className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 font-semibold flex items-center gap-2 shadow-lg shadow-blue-200 transition-all"
-                >
-                  {isSubmitting ? <><Loader2 className="w-5 h-5 animate-spin" /> Saving...</> : (editingProduct ? 'Update Product' : 'Create Product')}
+              <div className="flex justify-end gap-3">
+                <button type="button" onClick={resetForm} className="px-6 py-2 border rounded-xl font-bold">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="px-6 py-2 bg-blue-600 text-white rounded-xl font-bold disabled:opacity-50">
+                  {isSubmitting ? 'Saving...' : 'Save Product'}
                 </button>
               </div>
             </form>
