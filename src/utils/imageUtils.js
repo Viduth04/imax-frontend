@@ -26,19 +26,20 @@ export const getBaseUrl = () => {
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return 'https://placehold.co/600x600?text=No+Image';
   
-  // If it's already a full external URL, return it
+  // 1. Handle absolute URLs (like Cloudinary or external links)
   if (imagePath.startsWith('http')) return imagePath;
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://imax-backend.onrender.com';
 
-  // 1. Clean the path: remove leading slashes
+  // 2. Clean the path: Remove all leading slashes and redundant 'uploads/'
+  // This handles both "/uploads/products/img.jpg" and "products/img.jpg"
   let cleanPath = imagePath.replace(/^\/+/, ''); 
-
-  // 2. Remove "uploads/" from the string if it exists to prevent /uploads/uploads/
+  
   if (cleanPath.startsWith('uploads/')) {
     cleanPath = cleanPath.replace('uploads/', '');
   }
 
-  // 3. Return the final clean URL pointing to the backend's static route
+  // 3. Final URL Construction
+  // Our backend index.js serves the 'uploads' folder at the '/uploads' route
   return `${BACKEND_URL}/uploads/${cleanPath}`;
 };
