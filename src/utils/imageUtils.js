@@ -20,27 +20,34 @@ export const getBaseUrl = () => {
 /**
  * Construct full image URL
  */
+/**
+ * Construct full image URL forcing the Backend domain
+ */
 export const getImageUrl = (path) => {
   if (!path) return 'https://placehold.co/600x600?text=No+Image';
+  
+  // If it's already a full URL, don't touch it
   if (path.startsWith('http')) return path;
 
-  // 1. Define your backend root (Render URL)
-  // We strip /api to ensure we point to the static folder root
+  // 1. YOUR LIVE BACKEND URL (Hardcoded for stability)
   const backendRoot = "https://imax-backend.onrender.com";
 
-  // 2. Clean the incoming path (fix Windows slashes)
+  // 2. Clean the path (Fix Windows backslashes)
   let cleanPath = path.replace(/\\/g, '/');
   
-  // 3. Ensure the path starts with /uploads
-  if (!cleanPath.toLowerCase().includes('uploads/')) {
-    cleanPath = `uploads/products/${cleanPath.startsWith('/') ? cleanPath.slice(1) : cleanPath}`;
+  // 3. Remove leading slash if it exists to prevent double slashes
+  if (cleanPath.startsWith('/')) {
+    cleanPath = cleanPath.slice(1);
   }
 
-  // 4. Ensure there is exactly one slash between domain and path
-  const normalizedPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+  // 4. Ensure 'uploads/' is at the start
+  // This matches your backend app.use('/uploads', express.static(uploadsPath))
+  if (!cleanPath.toLowerCase().startsWith('uploads/')) {
+    cleanPath = `uploads/${cleanPath}`;
+  }
+
+  // 5. Construct the final Absolute URL
+  const finalUrl = `${backendRoot}/${cleanPath}`;
   
-  const finalUrl = `${backendRoot}${normalizedPath}`;
-  
-  console.log("🔗 Absolute Image Link:", finalUrl);
   return finalUrl;
 };
