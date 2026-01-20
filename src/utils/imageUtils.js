@@ -29,10 +29,10 @@ export const getImageUrl = (imagePath) => {
   // If it's already a full URL, return it
   if (imagePath.startsWith('http')) return imagePath;
 
-  // This is your ACTUAL backend address on Render
+  // YOUR ACTUAL RENDER BACKEND
   const BACKEND_URL = 'https://imax-backend-web-service.onrender.com'; 
 
-  // Remove any leading slash from imagePath to prevent double slashes //
+  // Remove leading slash if it exists to prevent "com//uploads"
   const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
 
   return `${BACKEND_URL}/${cleanPath}`;
