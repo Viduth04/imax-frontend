@@ -2,27 +2,57 @@ import api from '../api.js';
 
 /**
  * Get the base URL for serving static files (images)
+ * This should match the backend server URL without /api
  */
 export const getBaseUrl = () => {
-  const apiBase = api.defaults.baseURL || '';
-  
-  // If VITE_BACKEND_URL is set, extract the base URL
-  if (apiBase && apiBase.includes('/api')) {
-    return apiBase.split('/api')[0];
-  }
-  
-  // For local development, use localhost:10000 (backend port)
-  if (import.meta.env.DEV) {
+  try {
+    // Method 1: Extract from API base URL (most reliable)
+    const apiBase = api?.defaults?.baseURL || '';
+    if (apiBase && typeof apiBase === 'string' && apiBase.includes('/api')) {
+      const base = apiBase.split('/api')[0];
+      if (import.meta.env.DEV) {
+        console.log('✅ Base URL from api.defaults.baseURL:', base);
+      }
+      return base;
+    }
+    
+    // Method 2: Use environment variable
+    const envUrl = import.meta.env.VITE_BACKEND_URL?.trim().replace(/\/+$/, '');
+    if (envUrl) {
+      const base = envUrl.includes('/api') ? envUrl.split('/api')[0] : envUrl;
+      if (import.meta.env.DEV) {
+        console.log('✅ Base URL from VITE_BACKEND_URL:', base);
+      }
+      return base;
+    }
+    
+    // Method 3: Default to localhost:10000 for development
+    if (import.meta.env.DEV) {
+      const devBase = 'http://localhost:10000';
+      console.log('✅ Base URL (dev default):', devBase);
+      return devBase;
+    }
+    
+    // Method 4: Try to get from current window location (for production)
+    if (typeof window !== 'undefined' && window.location) {
+      const origin = window.location.origin;
+      if (import.meta.env.DEV) {
+        console.log('✅ Base URL from window.location.origin:', origin);
+      }
+      return origin;
+    }
+    
+    // Fallback
+    if (import.meta.env.DEV) {
+      console.warn('⚠️ Could not determine base URL, using localhost:10000 as fallback');
+    }
+    return 'http://localhost:10000';
+  } catch (error) {
+    if (import.meta.env.DEV) {
+      console.error('❌ Error in getBaseUrl:', error);
+    }
     return 'http://localhost:10000';
   }
-  
-  // For production, try to extract from env or use empty string
-  const envUrl = import.meta.env.VITE_BACKEND_URL?.trim().replace(/\/+$/, '');
-  if (envUrl) {
-    return envUrl.split('/api')[0] || envUrl;
-  }
-  
-  return '';
 };
 
 /**
@@ -32,20 +62,28 @@ export const getBaseUrl = () => {
  */
 export const getImageUrl = (path) => {
   if (!path) {
-    console.warn('⚠️ No image path provided');
+    if (import.meta.env.DEV) {
+      console.warn('⚠️ getImageUrl: No image path provided');
+    }
     return 'https://placehold.co/400x400?text=No+Image';
   }
   
-  // If already a full URL, return as is
+  // If already a full URL, add cache busting and return
   if (path.startsWith('http://') || path.startsWith('https://')) {
-    return path;
+    const cacheBuster = typeof window !== 'undefined' ? (sessionStorage.getItem('imageCacheVersion') || '1') : '1';
+    const separator = path.includes('?') ? '&' : '?';
+    const urlWithCache = `${path}${separator}v=${cacheBuster}`;
+    if (import.meta.env.DEV) {
+      console.log('🖼️ Full URL provided, added cache:', urlWithCache);
+    }
+    return urlWithCache;
   }
   
-  // Normalize the path - ensure it starts with /uploads
-  let cleanPath = path.replace(/\\/g, '/');
-  
-  // Remove any double slashes
-  cleanPath = cleanPath.replace(/\/+/g, '/');
+  // Normalize the path
+  let cleanPath = String(path)
+    .replace(/\\/g, '/')  // Convert backslashes to forward slashes
+    .replace(/\/+/g, '/')  // Remove multiple slashes
+    .trim();
   
   // Ensure it starts with /
   if (!cleanPath.startsWith('/')) {
@@ -55,33 +93,32 @@ export const getImageUrl = (path) => {
   // Ensure it's the uploads path (backend saves as /uploads/products/filename)
   if (!cleanPath.startsWith('/uploads')) {
     // If path doesn't start with /uploads, prepend it
-    cleanPath = '/uploads' + (cleanPath.startsWith('/') ? '' : '/') + cleanPath.replace(/^\/+/, '');
+    const pathWithoutLeadingSlash = cleanPath.replace(/^\/+/, '');
+    cleanPath = `/uploads/${pathWithoutLeadingSlash}`;
   }
+  
+  // Get base URL
+  const base = getBaseUrl();
   
   // Construct full URL
-  const base = getBaseUrl() || 'http://localhost:10000';
   let fullUrl = `${base}${cleanPath}`;
   
-  // Add cache-busting parameter for updated images (prevents browser cache issues)
-  // Use a timestamp based on when the path was last modified (if we can detect updates)
-  // For now, add a version parameter that changes when images are updated
-  const cacheBuster = sessionStorage.getItem('imageCacheVersion') || '1';
-  if (fullUrl.includes('?')) {
-    fullUrl += `&v=${cacheBuster}`;
-  } else {
-    fullUrl += `?v=${cacheBuster}`;
-  }
+  // Remove any double slashes that might have been created (except after http://)
+  fullUrl = fullUrl.replace(/([^:]\/)\/+/g, '$1');
   
-  // Debug logging - log all calls for debugging (only in dev or when debugging)
-  if (import.meta.env.DEV || (typeof window !== 'undefined' && window.location?.search?.includes('debug=1'))) {
-    console.log('🖼️ getImageUrl called:', {
+  // Add cache-busting parameter
+  const cacheBuster = typeof window !== 'undefined' ? (sessionStorage.getItem('imageCacheVersion') || Date.now().toString()) : '1';
+  const separator = fullUrl.includes('?') ? '&' : '?';
+  fullUrl = `${fullUrl}${separator}v=${cacheBuster}`;
+  
+  // Always log in development for debugging
+  if (import.meta.env.DEV) {
+    console.log('🖼️ getImageUrl:', {
       originalPath: path,
       cleanedPath: cleanPath,
       baseUrl: base,
       fullUrl: fullUrl,
-      apiBase: api.defaults.baseURL,
-      windowOrigin: typeof window !== 'undefined' ? window.location.origin : '',
-      env: import.meta.env.DEV ? 'dev' : 'prod',
+      apiBaseURL: api?.defaults?.baseURL || 'not set',
       cacheVersion: cacheBuster
     });
   }

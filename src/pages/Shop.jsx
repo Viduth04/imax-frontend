@@ -118,20 +118,30 @@ const Shop = () => {
       const { data } = await api.get('/products', { params });
       
       if (data.success) {
-        // Debug: Log products and their images
+        // Debug: Log products and their images with constructed URLs
         console.log('📦 Shop - Fetched products:', data.products.length);
-        data.products.forEach(p => {
+        console.log('🔧 API Base URL:', api.defaults.baseURL);
+        console.log('🔧 Current API Config:', {
+          baseURL: api.defaults.baseURL,
+          withCredentials: api.defaults.withCredentials
+        });
+        
+        data.products.forEach((p, index) => {
           if (p.images && p.images.length > 0) {
             const imageUrl = getImageUrl(p.images[0]);
-            console.log(`  ✅ Product "${p.name}":`, {
-              rawPath: p.images[0],
-              fullUrl: imageUrl,
-              allImages: p.images
+            console.log(`  ✅ Product [${index}] "${p.name}":`, {
+              productId: p._id,
+              rawImagePath: p.images[0],
+              imageType: typeof p.images[0],
+              constructedUrl: imageUrl,
+              allImages: p.images,
+              imageCount: p.images.length
             });
           } else {
-            console.warn(`  ⚠️ Product "${p.name}": No images`);
+            console.warn(`  ⚠️ Product [${index}] "${p.name}": No images - images array:`, p.images);
           }
         });
+        
         setProducts(data.products);
         setPagination({
           currentPage: data.currentPage,

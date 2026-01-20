@@ -34,7 +34,14 @@ const ProductDetail = () => {
       // Use the 'api' instance instead of raw axios
       const { data } = await api.get(`/products/${id}`);
       if (data.success) {
-        console.log('ProductDetail - Fetched product:', data.product.name, 'Images:', data.product.images);
+        console.log('📦 ProductDetail - Fetched product:', {
+          name: data.product.name,
+          id: data.product._id,
+          rawImages: data.product.images,
+          imageCount: data.product.images?.length || 0,
+          firstImageUrl: getImageUrl(data.product.images?.[0]),
+          apiBaseURL: api.defaults.baseURL
+        });
         setProduct(data.product);
       }
     } catch (error) {
@@ -108,11 +115,23 @@ const ProductDetail = () => {
             <div className="space-y-4 animate-slide-in-left">
               <div className="relative aspect-square bg-slate-50 rounded-2xl overflow-hidden border border-slate-100">
                 <img
+                  key={`${product._id}-${selectedImage}-${product.images?.[selectedImage]}`}
                   src={getImageUrl(product.images?.[selectedImage])}
                   alt={product.name}
                   className="w-full h-full object-contain p-4"
                   onError={(e) => {
+                    const failedUrl = getImageUrl(product.images?.[selectedImage]);
+                    console.error('❌ ProductDetail - Failed to load main image:', {
+                      productId: product._id,
+                      imageIndex: selectedImage,
+                      imagePath: product.images?.[selectedImage],
+                      constructedUrl: failedUrl
+                    });
+                    e.target.onerror = null;
                     e.target.src = 'https://placehold.co/400x400?text=No+Image';
+                  }}
+                  onLoad={() => {
+                    console.log('✅ ProductDetail - Main image loaded:', getImageUrl(product.images?.[selectedImage]));
                   }}
                 />
                 
@@ -153,10 +172,13 @@ const ProductDetail = () => {
                       }`}
                     >
                       <img 
+                        key={`thumb-${idx}-${img}`}
                         src={getImageUrl(img)} 
                         className="w-full h-full object-cover" 
                         alt="thumbnail"
                         onError={(e) => {
+                          console.error('❌ ProductDetail - Thumbnail failed:', getImageUrl(img));
+                          e.target.onerror = null;
                           e.target.src = 'https://placehold.co/80x80?text=Image';
                         }}
                       />
