@@ -23,31 +23,16 @@ export const getBaseUrl = () => {
 /**
  * Construct full image URL forcing the Backend domain
  */
-export const getImageUrl = (path) => {
-  if (!path) return 'https://placehold.co/600x600?text=No+Image';
+export const getImageUrl = (imagePath) => {
+  if (!imagePath) return 'https://placehold.co/600x600?text=No+Image';
   
-  // If it's already a full URL, don't touch it
-  if (path.startsWith('http')) return path;
+  // If the path is already a full URL (like from a CDN), return it
+  if (imagePath.startsWith('http')) return imagePath;
 
-  // 1. YOUR LIVE BACKEND URL (Hardcoded for stability)
-  const backendRoot = "https://imax-backend.onrender.com";
-
-  // 2. Clean the path (Fix Windows backslashes)
-  let cleanPath = path.replace(/\\/g, '/');
+  // Replace this URL with your ACTUAL Render backend URL
+  const BASE_URL = 'https://your-backend-name.onrender.com'; 
   
-  // 3. Remove leading slash if it exists to prevent double slashes
-  if (cleanPath.startsWith('/')) {
-    cleanPath = cleanPath.slice(1);
-  }
-
-  // 4. Ensure 'uploads/' is at the start
-  // This matches your backend app.use('/uploads', express.static(uploadsPath))
-  if (!cleanPath.toLowerCase().startsWith('uploads/')) {
-    cleanPath = `uploads/${cleanPath}`;
-  }
-
-  // 5. Construct the final Absolute URL
-  const finalUrl = `${backendRoot}/${cleanPath}`;
-  
-  return finalUrl;
+  // Ensure there is a single slash between base URL and path
+  const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  return `${BASE_URL}${cleanPath}`;
 };

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ShoppingCart, ArrowLeft, Tag, Minus, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+// Add Loader2 to your imports
+import { ShoppingCart, ArrowLeft, Tag, Minus, Plus, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import toast from 'react-hot-toast';
