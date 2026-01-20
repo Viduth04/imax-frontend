@@ -236,7 +236,10 @@ const Shop = () => {
                         src={getImageUrl(product.images?.[0])}
                         alt={product.name}
                         className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
-                        onError={(e) => { e.target.src = 'https://placehold.co/400x400?text=No+Image'; }}
+                        onError={(e) => { 
+                          console.log("Image load error on Shop:", e.target.src);
+                          e.target.src = 'https://placehold.co/400x400?text=No+Image'; 
+                        }}
                       />
                     </div>
 

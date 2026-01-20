@@ -26,12 +26,15 @@ export const getBaseUrl = () => {
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return 'https://placehold.co/600x600?text=No+Image';
   
+  // If it's already a full URL, use it
   if (imagePath.startsWith('http')) return imagePath;
 
-  // This will now use the URL you set in the Vercel Dashboard
-  // If the variable isn't found, it falls back to the web-service URL
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://imax-backend-web-service.onrender.com'; 
+  // Primary URL from your Vercel Settings, with fallbacks to your known Render URLs
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 
+                      'https://imax-backend-web-service.onrender.com' || 
+                      'https://imax-backend.onrender.com'; 
 
+  // Remove leading slash if it exists
   const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
 
   return `${BACKEND_URL}/${cleanPath}`;
