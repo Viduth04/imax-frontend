@@ -26,16 +26,19 @@ export const getBaseUrl = () => {
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return 'https://placehold.co/600x600?text=No+Image';
   
-  // If it's already a full URL, use it
+  // If it's already a full external URL, return it
   if (imagePath.startsWith('http')) return imagePath;
 
-  // Primary URL from your Vercel Settings, with fallbacks to your known Render URLs
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 
-                      'https://imax-backend-web-service.onrender.com' || 
-                      'https://imax-backend.onrender.com'; 
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://imax-backend.onrender.com';
 
-  // Remove leading slash if it exists
-  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  // 1. Clean the path: remove leading slashes
+  let cleanPath = imagePath.replace(/^\/+/, ''); 
 
-  return `${BACKEND_URL}/${cleanPath}`;
+  // 2. Remove "uploads/" from the string if it exists to prevent /uploads/uploads/
+  if (cleanPath.startsWith('uploads/')) {
+    cleanPath = cleanPath.replace('uploads/', '');
+  }
+
+  // 3. Return the final clean URL pointing to the backend's static route
+  return `${BACKEND_URL}/uploads/${cleanPath}`;
 };
