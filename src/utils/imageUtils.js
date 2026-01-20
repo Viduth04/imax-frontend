@@ -24,20 +24,23 @@ export const getImageUrl = (path) => {
   if (!path) return 'https://placehold.co/600x600?text=No+Image';
   if (path.startsWith('http')) return path;
 
-  // 1. Get the base URL (e.g., https://imax-backend.onrender.com)
-  // We remove /api if it accidentally exists
-  const baseUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000')
-    .replace(/\/api$/, '')
-    .replace(/\/+$/, '');
+  // 1. Define your backend root (Render URL)
+  // We strip /api to ensure we point to the static folder root
+  const backendRoot = "https://imax-backend.onrender.com";
 
-  // 2. Clean the path
+  // 2. Clean the incoming path (fix Windows slashes)
   let cleanPath = path.replace(/\\/g, '/');
-  if (cleanPath.startsWith('/')) cleanPath = cleanPath.slice(1);
-
-  // 3. Ensure 'uploads/' is present
-  if (!cleanPath.toLowerCase().startsWith('uploads/')) {
-    cleanPath = `uploads/${cleanPath}`;
+  
+  // 3. Ensure the path starts with /uploads
+  if (!cleanPath.toLowerCase().includes('uploads/')) {
+    cleanPath = `uploads/products/${cleanPath.startsWith('/') ? cleanPath.slice(1) : cleanPath}`;
   }
 
-  return `${baseUrl}/${cleanPath}`;
+  // 4. Ensure there is exactly one slash between domain and path
+  const normalizedPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+  
+  const finalUrl = `${backendRoot}${normalizedPath}`;
+  
+  console.log("🔗 Absolute Image Link:", finalUrl);
+  return finalUrl;
 };
