@@ -1,23 +1,23 @@
 import api from '../api.js';
 
 /**
- * Get the base URL for serving static files (images)
+ * Dynamically identifies the backend root URL
  */
 export const getBaseUrl = () => {
   try {
-    // 1. Check for Vercel/Production environment variable
+    // 1. Priority: Use the environment variable you set in Vercel
     const envUrl = import.meta.env.VITE_BACKEND_URL;
     if (envUrl) {
       return envUrl.replace(/\/api$/, '').replace(/\/+$/, '');
     }
 
-    // 2. Extract root from active axios instance
+    // 2. Fallback: Extract root from your Axios config
     const apiBase = api?.defaults?.baseURL || '';
     if (apiBase && apiBase.includes('/api')) {
       return apiBase.split('/api')[0];
     }
     
-    // 3. Final local fallback
+    // 3. Dev Fallback
     return 'http://localhost:10000';
   } catch (error) {
     return 'http://localhost:10000';
@@ -25,17 +25,17 @@ export const getBaseUrl = () => {
 };
 
 /**
- * Construct full image URL
+ * Creates the final URL for the <img> tag
  */
 export const getImageUrl = (path) => {
   if (!path) return 'https://placehold.co/600x600?text=No+Image';
   
   if (path.startsWith('http')) return path;
 
-  // Fix path slashes for cross-platform compatibility
+  // Standardize slashes for Windows/Linux
   let cleanPath = path.replace(/\\/g, '/');
 
-  // Ensure /uploads is included correctly
+  // Ensure /uploads is included
   if (!cleanPath.toLowerCase().includes('uploads/')) {
     cleanPath = `/uploads/${cleanPath.startsWith('/') ? cleanPath.slice(1) : cleanPath}`;
   } else {
@@ -44,7 +44,7 @@ export const getImageUrl = (path) => {
 
   const base = getBaseUrl().replace(/\/+$/, '');
   
-  // Combine base and path, removing double slashes except after 'http:'
+  // Combine and remove double slashes (except after http:)
   const fullUrl = `${base}${cleanPath}`.replace(/([^:]\/)\/+/g, '$1');
   
   return `${fullUrl}?v=${sessionStorage.getItem('imageCacheVersion') || '1'}`;
