@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  ShoppingCart, ArrowLeft, Package, Box, Tag, 
+  ShoppingCart, ArrowLeft, Tag, 
   Minus, Plus, ChevronLeft, ChevronRight 
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import toast from 'react-hot-toast';
-import api from '../api.js'; // Used this instead of axios
+import api from '../api.js'; 
 import { getImageUrl } from '../utils/imageUtils.js';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { checkAuth } = useAuth(); // Assuming checkAuth is a function or boolean
+  
+  // Ensure we use 'user' or 'isAuthenticated' from AuthContext
+  const { user, isAuthenticated } = useAuth(); 
   const { addToCart } = useCart();
 
   const [product, setProduct] = useState(null);
@@ -22,7 +24,6 @@ const ProductDetail = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [adding, setAdding] = useState(false);
 
-  // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
     fetchProduct();
@@ -31,17 +32,8 @@ const ProductDetail = () => {
   const fetchProduct = async () => {
     try {
       setLoading(true);
-      // Use the 'api' instance instead of raw axios
       const { data } = await api.get(`/products/${id}`);
       if (data.success) {
-        console.log('📦 ProductDetail - Fetched product:', {
-          name: data.product.name,
-          id: data.product._id,
-          rawImages: data.product.images,
-          imageCount: data.product.images?.length || 0,
-          firstImageUrl: getImageUrl(data.product.images?.[0]),
-          apiBaseURL: api.defaults.baseURL
-        });
         setProduct(data.product);
       }
     } catch (error) {
@@ -53,8 +45,8 @@ const ProductDetail = () => {
   };
 
   const handleAddToCart = async () => {
-    // Note: Ensure checkAuth logic matches your AuthContext (e.g., if it's a function)
-    if (!checkAuth) {
+    // Check if user is logged in
+    if (!user && !isAuthenticated) {
       toast.error('Please login to add items to cart');
       navigate('/login');
       return;
@@ -97,6 +89,9 @@ const ProductDetail = () => {
 
   if (!product) return null;
 
+  // Safeguard image availability
+  const hasImages = product.images && product.images.length > 0;
+
   return (
     <div className="min-h-screen bg-slate-50 mt-16">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -111,40 +106,36 @@ const ProductDetail = () => {
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden animate-fade-in">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 p-6 lg:p-12">
             
-            {/* Left: Gallery */}
+            {/* Left: Gallery Section */}
             <div className="space-y-4 animate-slide-in-left">
               <div className="relative aspect-square bg-slate-50 rounded-2xl overflow-hidden border border-slate-100">
                 <img
-                  key={`${product._id}-${selectedImage}-${product.images?.[selectedImage]}`}
-                  src={getImageUrl(product.images?.[selectedImage])}
+                  key={`${product._id}-${selectedImage}`}
+                  src={hasImages ? getImageUrl(product.images[selectedImage]) : getImageUrl(null)}
                   alt={product.name}
-                  className="w-full h-full object-contain p-4"
+                  className="w-full h-full object-contain p-4 transition-opacity duration-300"
                   onError={(e) => {
-                    const failedUrl = getImageUrl(product.images?.[selectedImage]);
-                    console.error('❌ ProductDetail - Failed to load main image:', {
-                      productId: product._id,
-                      imageIndex: selectedImage,
-                      imagePath: product.images?.[selectedImage],
-                      constructedUrl: failedUrl
-                    });
                     e.target.onerror = null;
-                    e.target.src = 'https://placehold.co/400x400?text=No+Image';
-                  }}
-                  onLoad={() => {
-                    console.log('✅ ProductDetail - Main image loaded:', getImageUrl(product.images?.[selectedImage]));
+                    e.target.src = 'https://placehold.co/600x600?text=Image+Not+Found';
                   }}
                 />
                 
-                {product.images.length > 1 && (
+                {hasImages && product.images.length > 1 && (
                   <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none">
                     <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedImage(prev => (prev - 1 + product.images.length) % product.images.length); }}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setSelectedImage(prev => (prev - 1 + product.images.length) % product.images.length); 
+                      }}
                       className="p-2 bg-white/90 hover:bg-white rounded-full shadow-md transition-all pointer-events-auto"
                     >
                       <ChevronLeft className="w-5 h-5 text-slate-700" />
                     </button>
                     <button
-                      onClick={(e) => { e.stopPropagation(); setSelectedImage(prev => (prev + 1) % product.images.length); }}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setSelectedImage(prev => (prev + 1) % product.images.length); 
+                      }}
                       className="p-2 bg-white/90 hover:bg-white rounded-full shadow-md transition-all pointer-events-auto"
                     >
                       <ChevronRight className="w-5 h-5 text-slate-700" />
@@ -161,7 +152,8 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {product.images && product.images.length > 1 && (
+              {/* Thumbnails */}
+              {hasImages && product.images.length > 1 && (
                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                   {product.images.map((img, idx) => (
                     <button
@@ -172,15 +164,9 @@ const ProductDetail = () => {
                       }`}
                     >
                       <img 
-                        key={`thumb-${idx}-${img}`}
                         src={getImageUrl(img)} 
                         className="w-full h-full object-cover" 
-                        alt="thumbnail"
-                        onError={(e) => {
-                          console.error('❌ ProductDetail - Thumbnail failed:', getImageUrl(img));
-                          e.target.onerror = null;
-                          e.target.src = 'https://placehold.co/80x80?text=Image';
-                        }}
+                        alt={`thumbnail-${idx}`} 
                       />
                     </button>
                   ))}
@@ -188,7 +174,7 @@ const ProductDetail = () => {
               )}
             </div>
 
-            {/* Right: Details */}
+            {/* Right: Product Details Section */}
             <div className="flex flex-col animate-slide-in-right">
               <div className="mb-6">
                 <div className="flex items-center gap-2 mb-3">
@@ -242,7 +228,7 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {/* Purchase Section */}
+              {/* Purchase Controls */}
               <div className="mt-10 pt-8 border-t border-slate-100">
                 {product.quantity > 0 ? (
                   <div className="flex flex-col sm:flex-row gap-4">
@@ -269,7 +255,7 @@ const ProductDetail = () => {
                     <button
                       onClick={handleAddToCart}
                       disabled={adding}
-                      className="flex-1 flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-200 transition-all font-bold text-lg disabled:opacity-70"
+                      className="flex-1 flex items-center justify-center gap-3 px-8 py-4 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 hover:shadow-lg transition-all font-bold text-lg disabled:opacity-70"
                     >
                       {adding ? (
                         <div className="h-5 w-5 border-2 border-white/30 border-t-white animate-spin rounded-full" />

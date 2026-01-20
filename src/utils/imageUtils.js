@@ -2,19 +2,23 @@ import api from '../api.js';
 
 /**
  * Get the base URL for serving static files (images)
- * Strips /api from the axios baseURL to get the root server URL
+ * This handles stripping /api and checking environment variables for production.
  */
 export const getBaseUrl = () => {
   try {
+    // 1. Check if we have an explicit VITE_BACKEND_URL set (Crucial for Vercel/Production)
+    const envUrl = import.meta.env.VITE_BACKEND_URL;
+    if (envUrl) {
+      return envUrl.replace(/\/api$/, '').replace(/\/+$/, '');
+    }
+
+    // 2. Extract from the axios instance baseURL
     const apiBase = api?.defaults?.baseURL || '';
     if (apiBase && apiBase.includes('/api')) {
       return apiBase.split('/api')[0];
     }
     
-    // Fallback to environment variable or localhost
-    const envUrl = import.meta.env.VITE_BACKEND_URL;
-    if (envUrl) return envUrl.replace(/\/api$/, '').replace(/\/+$/, '');
-    
+    // 3. Fallback for local development
     return 'http://localhost:10000';
   } catch (error) {
     return 'http://localhost:10000';
@@ -22,32 +26,30 @@ export const getBaseUrl = () => {
 };
 
 /**
- * Construct full image URL from a path
+ * Construct full image URL from a path stored in the DB
  */
 export const getImageUrl = (path) => {
   if (!path) return 'https://placehold.co/600x600?text=No+Image';
   
-  // 1. Return immediately if it's already a full URL
+  // Return immediately if it's already a full external URL
   if (path.startsWith('http')) return path;
 
-  // 2. Fix Windows backslashes (\ to /)
+  // Fix Windows backslashes (\ to /)
   let cleanPath = path.replace(/\\/g, '/');
 
-  // 3. Logic to ensure path includes '/uploads' correctly
-  // If the path from DB is "products/image.jpg", we prepend "/uploads/"
+  // Ensure path includes '/uploads' correctly without doubling it
   if (!cleanPath.toLowerCase().includes('uploads/')) {
     cleanPath = `/uploads/${cleanPath.startsWith('/') ? cleanPath.slice(1) : cleanPath}`;
   } else {
-    // If it already has "uploads/", just ensure it starts with a single "/"
     cleanPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
   }
 
   const base = getBaseUrl().replace(/\/+$/, '');
   
-  // 4. Remove any double slashes created during concatenation
+  // Combine base and path, removing any potential triple slashes
   const fullUrl = `${base}${cleanPath}`.replace(/([^:]\/)\/+/g, '$1');
   
-  // 5. Add cache busting version
+  // Add cache busting version to ensure images update when replaced
   const v = sessionStorage.getItem('imageCacheVersion') || '1';
   return `${fullUrl}?v=${v}`;
 };
