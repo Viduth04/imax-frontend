@@ -39,6 +39,24 @@ const ProductDetail = () => {
     }
   };
 
+  const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      toast.error('Please login to add items to cart');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setAdding(true);
+      await addToCart(product._id, quantity);
+      toast.success('Added to cart');
+    } catch (error) {
+      toast.error('Failed to add to cart');
+    } finally {
+      setAdding(false);
+    }
+  };
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -64,12 +82,15 @@ const ProductDetail = () => {
                 src={hasImages ? getImageUrl(product.images[selectedImage]) : getImageUrl(null)}
                 alt={product.name}
                 className="w-full h-full object-contain p-4"
-                onError={(e) => { e.target.src = 'https://placehold.co/600x600?text=Image+Server+Offline'; }}
+                onError={(e) => { 
+                  console.error("Failed to load image in Detail Page:", e.target.src);
+                  e.target.src = 'https://placehold.co/600x600?text=Image+Not+Found'; 
+                }}
               />
               {hasImages && product.images.length > 1 && (
                 <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none">
-                  <button onClick={() => setSelectedImage(prev => (prev - 1 + product.images.length) % product.images.length)} className="p-2 bg-white/90 rounded-full shadow-md pointer-events-auto hover:bg-white"><ChevronLeft/></button>
-                  <button onClick={() => setSelectedImage(prev => (prev + 1) % product.images.length)} className="p-2 bg-white/90 rounded-full shadow-md pointer-events-auto hover:bg-white"><ChevronRight/></button>
+                  <button onClick={() => setSelectedImage(prev => (prev - 1 + product.images.length) % product.images.length)} className="p-2 bg-white/90 rounded-full shadow-md pointer-events-auto hover:bg-white transition-colors"><ChevronLeft/></button>
+                  <button onClick={() => setSelectedImage(prev => (prev + 1) % product.images.length)} className="p-2 bg-white/90 rounded-full shadow-md pointer-events-auto hover:bg-white transition-colors"><ChevronRight/></button>
                 </div>
               )}
             </div>
@@ -87,9 +108,9 @@ const ProductDetail = () => {
 
           {/* INFO SECTION */}
           <div className="flex flex-col">
-            <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold w-fit mb-4">{product.category}</span>
-            <h1 className="text-4xl font-extrabold text-slate-900 mb-2">{product.name}</h1>
-            <p className="flex items-center text-slate-500 mb-6 font-medium"><Tag className="w-4 h-4 mr-2" /> {product.brand}</p>
+            <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold w-fit mb-4 uppercase tracking-wider">{product.category}</span>
+            <h1 className="text-4xl font-extrabold text-slate-900 mb-2 leading-tight">{product.name}</h1>
+            <p className="flex items-center text-slate-500 mb-6 font-medium"><Tag className="w-4 h-4 mr-2 text-blue-500" /> {product.brand}</p>
             
             <div className="mb-8">
               <p className="text-4xl font-black text-blue-600">LKR {product.price?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
@@ -102,15 +123,17 @@ const ProductDetail = () => {
 
             <div className="mt-auto flex flex-col sm:flex-row gap-4">
               <div className="flex items-center bg-slate-100 rounded-2xl p-1">
-                <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="p-3 hover:bg-white rounded-xl transition-all"><Minus/></button>
+                <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="p-3 hover:bg-white rounded-xl transition-all"><Minus className="w-5 h-5"/></button>
                 <span className="w-12 text-center font-bold text-xl">{quantity}</span>
-                <button onClick={() => setQuantity(q => Math.min(product.quantity, q + 1))} className="p-3 hover:bg-white rounded-xl transition-all"><Plus/></button>
+                <button onClick={() => setQuantity(q => Math.min(product.quantity, q + 1))} className="p-3 hover:bg-white rounded-xl transition-all"><Plus className="w-5 h-5"/></button>
               </div>
               <button 
-                disabled={product.quantity === 0}
+                onClick={handleAddToCart}
+                disabled={adding || product.quantity === 0}
                 className="flex-1 bg-blue-600 text-white rounded-2xl py-4 font-bold text-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-200 disabled:opacity-50"
               >
-                <ShoppingCart className="w-5 h-5" /> Add to Cart
+                {adding ? <Loader2 className="animate-spin" /> : <ShoppingCart className="w-5 h-5" />}
+                Add to Cart
               </button>
             </div>
           </div>
