@@ -1,51 +1,43 @@
 import api from '../api.js';
 
-/**
- * Dynamically identifies the backend root URL
- */
 export const getBaseUrl = () => {
-  try {
-    // 1. Priority: Use the environment variable you set in Vercel
-    const envUrl = import.meta.env.VITE_BACKEND_URL;
-    if (envUrl) {
-      return envUrl.replace(/\/api$/, '').replace(/\/+$/, '');
-    }
-
-    // 2. Fallback: Extract root from your Axios config
-    const apiBase = api?.defaults?.baseURL || '';
-    if (apiBase && apiBase.includes('/api')) {
-      return apiBase.split('/api')[0];
-    }
-    
-    // 3. Dev Fallback
-    return 'http://localhost:10000';
-  } catch (error) {
-    return 'http://localhost:10000';
+  // 1. Explicitly check the Vercel Environment Variable
+  const envUrl = import.meta.env.VITE_BACKEND_URL;
+  
+  if (envUrl) {
+    // Remove /api and any trailing slashes to prevent // in the URL
+    return envUrl.replace(/\/api$/, '').replace(/\/+$/, '');
   }
-};
 
+  // 2. Fallback to API defaults
+  const apiBase = api?.defaults?.baseURL || '';
+  if (apiBase.includes('/api')) {
+    return apiBase.split('/api')[0].replace(/\/+$/, '');
+  }
+  
+  return 'http://localhost:10000';
+};
 /**
- * Creates the final URL for the <img> tag
+ * Construct full image URL
  */
 export const getImageUrl = (path) => {
   if (!path) return 'https://placehold.co/600x600?text=No+Image';
-  
   if (path.startsWith('http')) return path;
 
-  // Standardize slashes for Windows/Linux
-  let cleanPath = path.replace(/\\/g, '/');
+  // 1. Get the base URL (e.g., https://imax-backend.onrender.com)
+  // We remove /api if it accidentally exists
+  const baseUrl = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:10000')
+    .replace(/\/api$/, '')
+    .replace(/\/+$/, '');
 
-  // Ensure /uploads is included
-  if (!cleanPath.toLowerCase().includes('uploads/')) {
-    cleanPath = `/uploads/${cleanPath.startsWith('/') ? cleanPath.slice(1) : cleanPath}`;
-  } else {
-    cleanPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+  // 2. Clean the path
+  let cleanPath = path.replace(/\\/g, '/');
+  if (cleanPath.startsWith('/')) cleanPath = cleanPath.slice(1);
+
+  // 3. Ensure 'uploads/' is present
+  if (!cleanPath.toLowerCase().startsWith('uploads/')) {
+    cleanPath = `uploads/${cleanPath}`;
   }
 
-  const base = getBaseUrl().replace(/\/+$/, '');
-  
-  // Combine and remove double slashes (except after http:)
-  const fullUrl = `${base}${cleanPath}`.replace(/([^:]\/)\/+/g, '$1');
-  
-  return `${fullUrl}?v=${sessionStorage.getItem('imageCacheVersion') || '1'}`;
+  return `${baseUrl}/${cleanPath}`;
 };
