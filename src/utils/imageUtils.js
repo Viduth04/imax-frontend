@@ -26,13 +26,13 @@ export const getBaseUrl = () => {
 export const getImageUrl = (imagePath) => {
   if (!imagePath) return 'https://placehold.co/600x600?text=No+Image';
   
-  // If it's already a full URL, return it
+  // If it's already a full URL (like a placeholder), use it
   if (imagePath.startsWith('http')) return imagePath;
 
-  // YOUR ACTUAL RENDER BACKEND
+  // YOUR ACTUAL RENDER BACKEND URL
   const BACKEND_URL = 'https://imax-backend-web-service.onrender.com'; 
 
-  // Remove leading slash if it exists to prevent "com//uploads"
+  // Clean the path: remove leading slash to avoid "com//uploads"
   const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
 
   return `${BACKEND_URL}/${cleanPath}`;
