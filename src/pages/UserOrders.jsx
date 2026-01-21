@@ -3,6 +3,7 @@ import { Package, Clock, Truck, CheckCircle, XCircle, MapPin, CreditCard, Calend
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../api.js'; // This is your configured axios instance
+import { getImageUrl } from '../utils/imageUtils.js';
 import * as Yup from 'yup';
 
 const UserOrders = () => {
@@ -62,6 +63,12 @@ const UserOrders = () => {
       setLoading(true);
       const { data } = await api.get('/orders/my-orders'); // Changed from axios to api
       if (data.success) {
+        console.log('UserOrders - fetched orders:', data.orders);
+        // Debug the first order items
+        if (data.orders.length > 0 && data.orders[0].items) {
+          console.log('UserOrders - first order items:', data.orders[0].items);
+          console.log('UserOrders - first item image:', data.orders[0].items[0]?.image);
+        }
         setOrders(data.orders);
       }
     } catch (error) {
@@ -254,9 +261,17 @@ const UserOrders = () => {
                       <div key={index} className="flex gap-4">
                         <div className="w-20 h-20 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
                           <img
-                            src={item.image}
+                            src={getImageUrl(item.image || item.product?.images?.[0])}
                             alt={item.name}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              console.log("Image load error in UserOrders:", {
+                                itemImage: item.image,
+                                productImage: item.product?.images?.[0],
+                                item: item
+                              });
+                              e.target.src = 'https://placehold.co/400x400?text=No+Image';
+                            }}
                           />
                         </div>
                         <div className="flex-1">
