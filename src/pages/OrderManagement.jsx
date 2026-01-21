@@ -180,8 +180,354 @@ const OrderManagement = ({ isEmbedded = false }) => {
   const openView = (o) => { setSelectedOrder(o); setShowViewModal(true); };
   const closeView = () => { setSelectedOrder(null); setShowViewModal(false); };
 
+  // Embedded version (admin dashboard)
+  if (isEmbedded) {
+    return (
+      <div className="space-y-6">
+        {/* Header with Controls */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">Orders Management</h3>
+            <p className="text-gray-600 text-sm">Manage and track customer orders</p>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={downloadReport}
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              Export
+            </button>
+            <button
+              onClick={fetchOrders}
+              className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              <RefreshCcw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-600 text-sm font-medium">Total Orders</p>
+                <p className="text-2xl font-bold text-blue-900">{stats.totalOrders || 0}</p>
+              </div>
+              <Package className="h-8 w-8 text-blue-600" />
+            </div>
+          </div>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-yellow-600 text-sm font-medium">Pending Orders</p>
+                <p className="text-2xl font-bold text-yellow-900">{stats.pendingOrders || 0}</p>
+              </div>
+              <Clock className="h-8 w-8 text-yellow-600" />
+            </div>
+          </div>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-600 text-sm font-medium">Revenue</p>
+                <p className="text-2xl font-bold text-green-900">LKR {(stats.revenue || 0).toLocaleString()}</p>
+              </div>
+              <DollarSign className="h-8 w-8 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Filters and Search */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Search orders by ID, name, or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="processing">Processing</option>
+            <option value="shipped">Shipped</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+
+        {/* Orders Table */}
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {loading ? (
+                      <tr>
+                        <td colSpan="7" className="px-4 py-8 text-center">
+                          <div className="flex items-center justify-center">
+                            <RefreshCcw className="h-6 w-6 animate-spin text-blue-600 mr-2" />
+                            <span className="text-gray-600">Loading orders...</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : filteredOrders.length > 0 ? (
+                      filteredOrders.map((order) => (
+                        <tr key={order._id} className="hover:bg-gray-50">
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              #{order.orderNumber || order._id?.slice(-8)}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">{order.user?.name || 'N/A'}</div>
+                            <div className="text-sm text-gray-500">{order.user?.email || ''}</div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                              order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
+                              order.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
+                              order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {order.status || 'pending'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                            LKR {Number(order.total || 0).toLocaleString()}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => openView(order)}
+                                className="text-blue-600 hover:text-blue-900 p-1"
+                                title="View Details"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              {order.status !== 'delivered' && order.status !== 'cancelled' && (
+                                <select
+                                  value={order.status}
+                                  onChange={(e) => handleStatusUpdate(order._id, e.target.value)}
+                                  className="text-xs border border-gray-300 rounded px-2 py-1"
+                                >
+                                  <option value="pending">Pending</option>
+                                  <option value="processing">Processing</option>
+                                  <option value="shipped">Shipped</option>
+                                  <option value="delivered">Delivered</option>
+                                  <option value="cancelled">Cancelled</option>
+                                </select>
+                              )}
+                              <button
+                                onClick={() => handleDeleteOrder(order._id)}
+                                className="text-red-600 hover:text-red-900 p-1"
+                                title="Delete Order"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </td>
+                    </tr>
+                  ))
+                  ) : (
+                    <tr>
+                      <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
+                        No orders found
+                      </td>
+                    </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {pagination.totalPages > 1 && (
+            <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
+              <div className="flex-1 flex justify-between sm:hidden">
+                <button
+                  onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+                  disabled={pagination.currentPage === 1}
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+                  disabled={pagination.currentPage === pagination.totalPages}
+                  className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing page <span className="font-medium">{pagination.currentPage}</span> of{' '}
+                    <span className="font-medium">{pagination.totalPages}</span>
+                  </p>
+                </div>
+                <div>
+                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                    <button
+                      onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+                      disabled={pagination.currentPage === 1}
+                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+                      disabled={pagination.currentPage === pagination.totalPages}
+                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Order Details Modal */}
+        {showViewModal && selectedOrder && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="p-6 border-b border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900">Order Details</h3>
+                <p className="text-sm text-gray-600">Order #{selectedOrder.orderNumber || selectedOrder._id?.slice(-8)}</p>
+              </div>
+
+              <div className="p-6 space-y-6">
+
+                {/* Order Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-2">Customer Information</h4>
+                    <p className="text-sm"><span className="text-gray-500">Name:</span> <span className="font-medium text-blue-900">{selectedOrder.user?.name || 'N/A'}</span></p>
+                    <p className="text-sm"><span className="text-gray-500">Email:</span> <span className="font-medium text-blue-900">{selectedOrder.user?.email || 'N/A'}</span></p>
+                    <p className="text-sm"><span className="text-gray-500">Phone:</span> <span className="font-medium text-blue-900">{selectedOrder.shippingAddress?.phone || selectedOrder.user?.phone || 'N/A'}</span></p>
+                    {console.log('User data in modal:', selectedOrder.user)}
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <h4 className="font-medium text-gray-900 mb-2">Order Information</h4>
+                    <p className="text-sm"><span className="text-gray-500">Order ID:</span> <span className="font-medium text-green-900">#{selectedOrder.orderNumber || selectedOrder._id?.slice(-8)}</span></p>
+                    <p className="text-sm"><span className="text-gray-500">Status:</span> <span className={`font-medium capitalize px-2 py-1 rounded text-xs ml-2 ${
+                      selectedOrder.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                      selectedOrder.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
+                      selectedOrder.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
+                      selectedOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>{selectedOrder.status || 'pending'}</span></p>
+                    <p className="text-sm"><span className="text-gray-500">Date:</span> <span className="font-medium text-green-900">{new Date(selectedOrder.createdAt).toLocaleString()}</span></p>
+                    <p className="text-sm"><span className="text-gray-500">Payment:</span> <span className="font-medium text-green-900">{selectedOrder.paymentMethod || 'COD'}</span></p>
+                    <p className="text-sm"><span className="text-gray-500">Items:</span> <span className="font-medium text-green-900">{selectedOrder.items?.length || 0}</span></p>
+                    <p className="text-sm"><span className="text-gray-500">Total:</span> <span className="font-medium text-green-900">LKR {Number(selectedOrder.total || 0).toLocaleString()}</span></p>
+                  </div>
+                </div>
+
+                {/* Shipping Address */}
+                {selectedOrder.shippingAddress && (
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-2">Shipping Address</h4>
+                    <p className="text-gray-600">
+                      {selectedOrder.shippingAddress.street}, {selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state} {selectedOrder.shippingAddress.zipCode}
+                    </p>
+                  </div>
+                )}
+
+                {/* Order Items */}
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <h4 className="font-medium text-gray-900 mb-4">Order Items ({getOrderItems(selectedOrder).length})</h4>
+                  {getOrderItems(selectedOrder).length > 0 ? (
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                      <table className="w-full">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Product</th>
+                            <th className="px-4 py-2 text-center text-xs font-medium text-gray-500">Qty</th>
+                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Price</th>
+                            <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {getOrderItems(selectedOrder).map((item, idx) => (
+                            <tr key={idx} className="bg-white">
+                              <td className="px-4 py-3 text-sm font-medium text-purple-900">{item.name || 'Unknown Product'}</td>
+                              <td className="px-4 py-3 text-sm text-center font-medium text-purple-900">{item.quantity || 1}</td>
+                              <td className="px-4 py-3 text-sm text-right font-medium text-purple-900">LKR {Number(item.price || 0).toLocaleString()}</td>
+                              <td className="px-4 py-3 text-sm text-right font-bold text-purple-900">
+                                LKR {(Number(item.price || 0) * (item.quantity || 1)).toLocaleString()}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500 bg-white rounded-lg border-2 border-dashed border-gray-300">
+                      <p>No items found in this order</p>
+                      {console.log('Order items:', selectedOrder.items)}
+                    </div>
+                  )}
+                </div>
+
+                {/* Order Total */}
+                <div className="flex justify-end">
+                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 border border-blue-200 rounded-lg p-6 text-white shadow-lg">
+                    <div className="text-sm opacity-90">Grand Total</div>
+                    <div className="text-3xl font-black">LKR {(Number(selectedOrder.total) || 0).toLocaleString()}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
+                <button
+                  onClick={() => handleDeleteOrder(selectedOrder._id)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Order
+                </button>
+                <button
+                  onClick={closeView}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Full-page standalone version
   return (
-    <div className={isEmbedded ? "" : "min-h-screen bg-gradient-to-b from-slate-50 to-white p-6"}>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white p-6">
       {/* Modern Hero Header */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-blue-700 to-purple-700 p-8 text-white shadow-2xl mb-8">
         <div className="absolute inset-0 bg-black/10"></div>
@@ -439,7 +785,7 @@ const OrderManagement = ({ isEmbedded = false }) => {
         )}
       </div>
 
-      {/* Modern Orders Table */}
+      {/* Full Page Content - Keep Original */}
       <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
