@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, X, Search, Upload, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../api.js';
-import * as Yup from 'yun';
+import * as Yup from 'yup';
 import { getImageUrl } from '../utils/imageUtils.js';
 
 const ProductManagement = () => {
