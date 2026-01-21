@@ -14,7 +14,7 @@ import api from '../api.js'; // Using your configured axios instance
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const OrderManagement = () => {
+const OrderManagement = ({ isEmbedded = false }) => {
   const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(false);
@@ -181,7 +181,7 @@ const OrderManagement = () => {
   const closeView = () => { setSelectedOrder(null); setShowViewModal(false); };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white p-6">
+    <div className={isEmbedded ? "" : "min-h-screen bg-gradient-to-b from-slate-50 to-white p-6"}>
       {/* Modern Hero Header */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-blue-700 to-purple-700 p-8 text-white shadow-2xl mb-8">
         <div className="absolute inset-0 bg-black/10"></div>

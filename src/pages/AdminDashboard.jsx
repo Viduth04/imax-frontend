@@ -477,7 +477,7 @@ const AdminDashboard = () => {
                     <p className="text-slate-600">Loading order management...</p>
                   </div>
                 </div>
-                <OrderManagement />
+                <OrderManagement isEmbedded={true} />
               </div>
             )}
             {activeSection === 'appointments' && <AppointmentManagement />}
