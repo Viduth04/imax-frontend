@@ -87,6 +87,7 @@ const ContactPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+
       {/* Header */}
       <section className="bg-gradient-to-r from-blue-600 to-blue-700 text-white py-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -94,7 +95,7 @@ const ContactPage = () => {
             <h1 className="text-4xl md:text-6xl font-extrabold mb-4 animate-fade-in">
               Contact Us
             </h1>
-            <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto animate-fade-in">
+            <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto leading-relaxed">
               Get in touch with our expert team for all your computer parts and tech support needs
             </p>
           </div>
@@ -269,7 +270,7 @@ const ContactPage = () => {
                     className="flex items-center justify-between p-3 bg-white rounded-lg hover:bg-slate-50 transition-colors group"
                   >
                     <div className="flex items-center">
-                      <Settings className="w-5 h-5 text-blue-600 mr-3" />
+                      <Shield className="w-5 h-5 text-blue-600 mr-3" />
                       <span className="text-slate-700 font-medium">Technical Support</span>
                     </div>
                     <ArrowLeft className="w-5 h-5 text-slate-400 group-hover:text-blue-600 rotate-180 transition-colors" />
@@ -345,6 +346,7 @@ const ContactPage = () => {
           </div>
         </div>
       </section>
+
     </div>
   );
 };
