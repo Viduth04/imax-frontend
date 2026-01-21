@@ -17,14 +17,19 @@ const Home = () => {
       subtitle: 'Build your dream PC with top-quality components and hardware'
     },
     {
-      url: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
-      title: 'Latest PC Components',
-      subtitle: 'CPUs, GPUs, RAM, Motherboards & More - Everything for your build'
+      url: 'https://images.unsplash.com/photo-1552831388-6a0b3575b32a?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      title: 'High-Performance GPUs',
+      subtitle: 'Latest NVIDIA RTX & AMD Radeon Graphics Cards for Gaming & Work'
     },
     {
       url: 'https://images.unsplash.com/photo-1562979314-bee7453e911c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
       title: 'Expert PC Building',
       subtitle: 'Get professional advice and support for your custom PC build'
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80',
+      title: 'Next-Gen Processors',
+      subtitle: 'Intel Core & AMD Ryzen CPUs with Lightning-Fast Performance'
     }
   ];
 
@@ -147,14 +152,14 @@ const Home = () => {
                 <>
                   <Link
                     to="/shop"
-                    className="group inline-flex items-center justify-center px-10 py-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-blue-800 hover:scale-110 hover:shadow-2xl transition-all duration-300 shadow-xl text-lg animate-bounce-in"
+                    className="group inline-flex items-center justify-center px-10 py-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-blue-800 hover:scale-105 hover:shadow-2xl transition-all duration-300 shadow-xl text-lg animate-bounce-in"
                   >
                     Shop Now
                     <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
                   </Link>
                   <Link
                     to="/shop"
-                    className="group inline-flex items-center justify-center px-10 py-5 bg-white/10 backdrop-blur-md text-white font-bold rounded-xl hover:bg-white/20 hover:scale-110 transition-all duration-300 border-2 border-white/30 hover:border-white/50 text-lg animate-fade-in"
+                    className="group inline-flex items-center justify-center px-10 py-5 bg-white/10 backdrop-blur-md text-white font-bold rounded-xl hover:bg-white/20 hover:scale-105 transition-all duration-300 border-2 border-white/30 hover:border-white/50 text-lg animate-fade-in"
                   >
                     Browse Products
                     <ArrowRight className="ml-2 w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
@@ -172,14 +177,15 @@ const Home = () => {
               key={index}
               onClick={() => setCurrentSlide(index)}
               className={`h-3 rounded-full transition-all duration-300 hover:scale-125 ${
-                index === currentSlide 
-                  ? 'w-10 bg-white shadow-lg' 
+                index === currentSlide
+                  ? 'w-10 bg-white shadow-lg'
                   : 'w-3 bg-white/50 hover:bg-white/75'
               }`}
               aria-label={`Go to slide ${index + 1}`}
             />
           ))}
         </div>
+
 
         {/* Scroll Indicator */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30">
@@ -234,8 +240,8 @@ const Home = () => {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {serviceCategories.map((category, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 hover-lift animate-fade-in-up group"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
