@@ -10,6 +10,7 @@ import SupportPage from './pages/SupportPage';
 import AdminSupportPage from './pages/AdminSupportPage';
 import FeedbackPage from './pages/FeedbackPage';
 import ContactPage from './pages/ContactPage';
+import AboutPage from './pages/AboutPage';
 import Shop from './pages/Shop';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
@@ -29,6 +30,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/support" element={<SupportPage />} />
         <Route path="/contact" element={<ContactPage />} />
+        <Route path="/about" element={<AboutPage />} />
         <Route path="/feedback" element={<FeedbackPage />} />
         <Route path="/shop" element={<Shop />} />
         <Route path="/product/:id" element={<ProductDetail />} />
