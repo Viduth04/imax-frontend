@@ -1,40 +1,71 @@
 import api from '../api.js';
 
+/**
+ * Get the base URL for the backend
+ */
 export const getBaseUrl = () => {
-  // 1. Explicitly check the Vercel Environment Variable
+  // 1. Check environment variable first
   const envUrl = import.meta.env.VITE_BACKEND_URL;
-  
   if (envUrl) {
-    // Remove /api and any trailing slashes to prevent // in the URL
     return envUrl.replace(/\/api$/, '').replace(/\/+$/, '');
   }
 
-  // 2. Fallback to API defaults
+  // 2. Fallback to API base URL
   const apiBase = api?.defaults?.baseURL || '';
   if (apiBase.includes('/api')) {
     return apiBase.split('/api')[0].replace(/\/+$/, '');
   }
-  
-  return 'http://localhost:10000';
+
+  // 3. Development fallback
+  if (import.meta.env.DEV) {
+    return 'http://localhost:10000';
+  }
+
+  // 4. Production fallback
+  return 'https://imax-backend.onrender.com';
 };
+
 /**
- * Construct full image URL
- */
-/**
- * Construct full image URL forcing the Backend domain
+ * Construct full image URL with proper cache busting
  */
 export const getImageUrl = (imagePath) => {
-  if (!imagePath) return 'https://placehold.co/600x600?text=No+Image';
-  if (imagePath.startsWith('http')) return imagePath;
+  if (!imagePath) {
+    return 'https://placehold.co/400x400?text=No+Image';
+  }
 
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://imax-backend.onrender.com';
+  // If already a full URL, add cache busting
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    const cacheBuster = typeof window !== 'undefined' ? (sessionStorage.getItem('imageCacheVersion') || Date.now().toString()) : '1';
+    const separator = imagePath.includes('?') ? '&' : '?';
+    return `${imagePath}${separator}v=${cacheBuster}`;
+  }
 
-  // Remove leading slashes and redundant "uploads/" prefixes
-  let cleanPath = imagePath.replace(/^\/+/, ''); 
+  // Clean the path
+  let cleanPath = imagePath
+    .replace(/\\/g, '/') // Convert backslashes
+    .replace(/\/+/g, '/') // Remove double slashes
+    .replace(/^\/+/, ''); // Remove leading slashes
+
+  // Remove redundant "uploads/" prefix if present
   if (cleanPath.startsWith('uploads/')) {
     cleanPath = cleanPath.replace('uploads/', '');
   }
 
-  // Final result should be: https://imax-backend.onrender.com/uploads/products/filename.jpg
-  return `${BACKEND_URL}/uploads/${cleanPath}`;
+  // Get base URL
+  const baseUrl = getBaseUrl();
+
+  // Add cache busting to prevent stale images
+  const cacheBuster = typeof window !== 'undefined' ? (sessionStorage.getItem('imageCacheVersion') || Date.now().toString()) : '1';
+
+  // Construct final URL
+  const finalUrl = `${baseUrl}/uploads/${cleanPath}?v=${cacheBuster}`;
+
+  console.log('🖼️ Image URL constructed:', {
+    original: imagePath,
+    cleaned: cleanPath,
+    baseUrl: baseUrl,
+    finalUrl: finalUrl
+  });
+
+  return finalUrl;
 };

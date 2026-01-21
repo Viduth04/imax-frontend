@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, Filter, X, ShoppingCart, Box, Star, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -30,6 +30,7 @@ const Shop = () => {
   });
 
   const [brands, setBrands] = useState([]);
+  const lastCacheVersion = useRef(sessionStorage.getItem('imageCacheVersion') || localStorage.getItem('imageCacheVersion') || '1');
   const categoryOptions = [
     'Laptops', 
     'Desktops', 
@@ -52,6 +53,26 @@ const Shop = () => {
 
   useEffect(() => {
     fetchBrands();
+  }, []);
+
+  // Monitor cache version changes for automatic refresh
+  useEffect(() => {
+    const checkCacheVersion = () => {
+      const currentVersion = sessionStorage.getItem('imageCacheVersion') || localStorage.getItem('imageCacheVersion');
+      if (currentVersion && currentVersion !== lastCacheVersion.current) {
+        console.log('🔄 Shop detected cache version change from', lastCacheVersion.current, 'to', currentVersion);
+        lastCacheVersion.current = currentVersion;
+        fetchProducts();
+      }
+    };
+
+    // Check immediately
+    checkCacheVersion();
+
+    // Set up interval to check periodically
+    const interval = setInterval(checkCacheVersion, 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const fetchProducts = async () => {

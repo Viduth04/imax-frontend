@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ShoppingCart, ArrowLeft, Tag, Minus, Plus, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -18,11 +18,32 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [adding, setAdding] = useState(false);
+  const lastCacheVersion = useRef(sessionStorage.getItem('imageCacheVersion') || localStorage.getItem('imageCacheVersion') || '1');
 
   useEffect(() => {
     window.scrollTo(0, 0);
     fetchProduct();
   }, [id]);
+
+  // Monitor cache version changes for automatic refresh
+  useEffect(() => {
+    const checkCacheVersion = () => {
+      const currentVersion = sessionStorage.getItem('imageCacheVersion') || localStorage.getItem('imageCacheVersion');
+      if (currentVersion && currentVersion !== lastCacheVersion.current) {
+        console.log('🔄 ProductDetail detected cache version change from', lastCacheVersion.current, 'to', currentVersion);
+        lastCacheVersion.current = currentVersion;
+        fetchProduct();
+      }
+    };
+
+    // Check immediately
+    checkCacheVersion();
+
+    // Set up interval to check periodically
+    const interval = setInterval(checkCacheVersion, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchProduct = async () => {
     try {

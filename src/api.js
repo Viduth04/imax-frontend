@@ -10,7 +10,7 @@ const backendUrl = trimmed
 const baseURL = backendUrl || (import.meta.env.DEV ? 'http://localhost:10000/api' : '');
 
 const api = axios.create({
-  baseURL: 'https://imax-backend-web-service.onrender.com/api',
+  baseURL: baseURL || 'https://imax-backend.onrender.com/api',
   withCredentials: true
 });
 
