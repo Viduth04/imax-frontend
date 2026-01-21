@@ -76,8 +76,8 @@ export default function Header() {
             >
               About
             </button>
-            <button 
-              onClick={() => handleNavigation('/support')} 
+            <button
+              onClick={() => handleNavigation('/contact')}
               className="text-gray-300 hover:text-[#1961d5] font-medium transition-colors duration-300 text-sm xl:text-base"
             >
               Contact
